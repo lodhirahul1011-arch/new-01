@@ -62,8 +62,21 @@ function isValidDob(value: string) {
   const day = Number(match[1]);
   const month = Number(match[2]);
   const year = Number(match[3]);
-  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
-  return year >= 1900 && year <= new Date().getFullYear();
+  if (year < 1900 || year > new Date().getFullYear() || month < 1 || month > 12) return false;
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day &&
+    date.getTime() <= Date.now()
+  );
+}
+
+function normalizeDobInput(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
 function formatDob(date: Date) {
@@ -231,7 +244,7 @@ export default function PersonalDetails({ navigation, route }: Props) {
       if (localPhotoUri) {
         try {
           await uploadProfilePhoto({ uri: localPhotoUri, name: 'profile.jpg', type: 'image/jpeg' }).unwrap();
-        } catch (photoErr) {
+        } catch {
           // Non-fatal — the user can re-add a photo later from settings.
         }
       }
@@ -253,9 +266,18 @@ export default function PersonalDetails({ navigation, route }: Props) {
                 googleDob: `${dobMatch?.[3] ?? ''}-${dobMatch?.[2] ?? ''}-${dobMatch?.[1] ?? ''}`.replace(/^-+|-+$/g, ''),
                 googleGender: gender.trim(),
                 googlePhoto: prefillPhoto,
+                googleSignup: true,
               },
             },
           ],
+        });
+        return;
+      }
+
+      if (next === 'AccountVerified') {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'AccountVerified' }],
         });
         return;
       }
@@ -350,7 +372,10 @@ export default function PersonalDetails({ navigation, route }: Props) {
           <Field label="Date of Birth" required s={s} marginTop={s(16)} error={dobError} palette={palette}>
             <TextInput
               value={dob}
-              onChangeText={setDob}
+              onChangeText={value => {
+                setSubmitError(undefined);
+                setDob(normalizeDobInput(value));
+              }}
               onBlur={() => setTouched(t => ({ ...t, dob: true }))}
               placeholder="Enter your Date of Birth here"
               placeholderTextColor={palette.placeholder}

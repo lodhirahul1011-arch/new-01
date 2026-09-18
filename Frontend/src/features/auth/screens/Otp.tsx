@@ -196,7 +196,15 @@ export default function Otp({ navigation, route }: Props) {
   // — and must drop straight through to the app. Without that guard every
   // established phone-only account gets asked for an email forever, because
   // the phone sign-in path stores `phone` and leaves `email` unset entirely.
-  const routeAfterVerification = async (user: AuthUser) => {
+  const routeAfterVerification = async (user: AuthUser, verifiedFlow = flow) => {
+    if (verifiedFlow === 'signup') {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'PersonalDetails', params: { next: 'AccountVerified', prefillName: user?.name || '' } }],
+      });
+      return;
+    }
+
     if (!user?.name) {
       // Presence, not the verified flag, decides which leg still has to run:
       // these screens exist to COLLECT the missing identifier, and whatever
@@ -256,7 +264,10 @@ export default function Otp({ navigation, route }: Props) {
       if (isLinking) {
         const linked = await verifyLinkOtp(payload).unwrap();
         dispatch(authActions.userUpdated(linked.user));
-        await routeAfterVerification(linked.user);
+        await routeAfterVerification(
+          linked.user,
+          route.params?.showAccountVerified ? 'signup' : 'login',
+        );
         return;
       }
 
@@ -280,7 +291,7 @@ export default function Otp({ navigation, route }: Props) {
         logs.error('[notifications] login token sync failed', String(error));
       });
 
-      await routeAfterVerification(response.user);
+      await routeAfterVerification(response.user, flow);
     } catch (error: any) {
       setErr(error?.data?.message || 'The OTP entered is invalid/incorrect. Please try again.');
     }
