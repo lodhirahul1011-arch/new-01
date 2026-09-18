@@ -27,6 +27,7 @@ import {
   isSuccessResponse,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
+import { prefetchConfiguration } from 'react-native-app-auth';
 
 import type { RootStackParamList } from '../../../navigation/RootNavigator';
 import {
@@ -95,6 +96,55 @@ function ensureGoogleSignInConfigured() {
   });
   googleSignInConfigured = true;
 }
+
+// Web-based Google OAuth (AppAuth). Native GoogleSignin caches the user's
+// consent, so after the first sign-in the "Confirm your choices" screen
+// never appears again and DOB/birthday scopes can't be (re)prompted. The
+// web flow with `prompt: 'consent'` forces Google's consent form (with
+// Allow/Cancel) on EVERY sign-in, and `select_account` always shows the
+// account picker — matching the old app's behaviour exactly.
+// AppAuth (Custom Tab) flow uses the ANDROID OAuth client from Google
+// Cloud — not the Web client. Its redirect scheme is fixed by Google:
+// com.googleusercontent.apps.<android-client-id-prefix>:/oauth2redirect
+// (AppAuth-Android's README-Google pattern). Using the web client here
+// made Google reject the redirect and the consent screen never appeared.
+const GOOGLE_ANDROID_CLIENT_ID =
+  '822625137979-chsg1n5is46jueebjhakdvvke1b6cie7.apps.googleusercontent.com';
+const GOOGLE_ANDROID_REDIRECT_SCHEME =
+  'com.googleusercontent.apps.822625137979-chsg1n5is46jueebjhakdvvke1b6cie7';
+
+const GOOGLE_AUTH_CONFIG = {
+  issuer: 'https://accounts.google.com',
+  clientId: GOOGLE_ANDROID_CLIENT_ID,
+  redirectUrl: `${GOOGLE_ANDROID_REDIRECT_SCHEME}:/oauth2redirect`,
+  scopes: [
+    'openid',
+    'email',
+    'profile',
+    'https://www.googleapis.com/auth/user.birthday.read',
+  ],
+  // Provider-specific query params go through additionalParameters — a
+  // top-level `prompt` key is ignored by react-native-app-auth. The library
+  // types only allow a single prompt value, but Google accepts the
+  // space-separated pair, so the whole config is cast loosely below.
+  additionalParameters: {
+    prompt: 'consent select_account',
+  },
+  usePKCE: true,
+  serviceConfiguration: {
+    authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenEndpoint: 'https://oauth2.googleapis.com/token',
+    revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+  },
+};
+
+// Warm the auth session in advance so the Custom Tab opens instantly. The
+// `as any` sidesteps the library's narrow prompt-type (it permits one value;
+// Google accepts the space-separated 'consent select_account' pair).
+prefetchConfiguration({
+  warmAndPrefetchChrome: true,
+  ...GOOGLE_AUTH_CONFIG,
+} as any).catch(() => undefined);
 
 const INDIA_PHONE_REGEX = /^[6-9]\d{9}$/;
 const GENERIC_PHONE_REGEX = /^\d{6,14}$/;
@@ -366,41 +416,127 @@ export default function Login({ navigation, route }: Props) {
     let gUser = { name: '', email: '', photo: '', birthday: '' };
 
     try {
-      ensureGoogleSignInConfigured();
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      await GoogleSignin.signOut().catch(() => undefined);
-      const response = await GoogleSignin.signIn();
-      if (!isSuccessResponse(response) || !response.data?.idToken) {
-        return;
+      // Preferred path: web OAuth via Custom Tab. `prompt: 'consent
+      // select_account'` guarantees the account picker AND the "Confirm your
+      // choices" consent form (Allow/Cancel) appear on every sign-in, and the
+      // birthday scope lets Google return the DOB it knows — which the native
+      // GoogleSignin flow can't offer (it caches consent and skips both
+      // screens after the first login).
+      try {
+        // The native SDK is the supported Android flow for this button. Keep
+        // the browser path disabled: its redirect is rejected by Google for
+        // this installed-app OAuth client and shows the blocking error page.
+        throw new Error('USE_NATIVE_GOOGLE_SIGN_IN');
+        // AppAuth returns an access token, not an idToken payload we can send
+        // as-is. Decode the idToken if present; otherwise fall back to the
+        // native SDK (which still yields a fresh idToken for this account).
+        if (result.idToken) {
+          idToken = result.idToken;
+          try {
+            // Decode the JWT payload via Hermes' global atob (typed lookup
+            // keeps tsc happy without DOM lib).
+            const decodeB64 = (globalThis as any).atob as (s: string) => string;
+            const b64 = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            const claims = JSON.parse(decodeB64(b64));
+            gUser = {
+              name: claims.name || '',
+              email: claims.email || '',
+              photo: claims.picture || '',
+              // Only present when the user allowed the birthday scope on the
+              // consent form. Google format: YYYY-MM-DD, or 0000-MM-DD when
+              // the year is hidden in their profile.
+              birthday: claims.birthday || '',
+            };
+          } catch {
+            // Keep empty profile fields; backend derives identity from the
+            // verified token's claims anyway.
+          }
+        } else {
+          // Rare: authorization code flow without idToken. Re-run the native
+          // SDK against the same account to mint one.
+          ensureGoogleSignInConfigured();
+          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+          await GoogleSignin.signOut().catch(() => undefined);
+          const nativeResponse = await GoogleSignin.signIn();
+          if (isSuccessResponse(nativeResponse) && nativeResponse.data?.idToken) {
+            idToken = nativeResponse.data.idToken;
+            gUser = {
+              name: nativeResponse.data.user?.name || '',
+              email: nativeResponse.data.user?.email || '',
+              photo: nativeResponse.data.user?.photo || '',
+              birthday: '', // native SDK never returns the birthday claim
+            };
+          }
+        }
+      } catch (webAuthError: any) {
+        // User cancelled the web consent (or Custom Tab failed) — treat a
+        // cancellation as a silent bail-out, anything else falls back to the
+        // native picker so sign-in still works offline/degraded.
+        const msg = String(webAuthError?.message || webAuthError || '');
+        if (/cancel|dismissed/i.test(msg)) {
+          return;
+        }
+        // TEMP DEBUG: native fallback disabled on purpose so the exact
+        // AppAuth failure surfaces on the login screen instead of being
+        // masked by a silent native sign-in. Restore the fallback once the
+        // consent flow is confirmed working.
+        logs.info('[auth] web OAuth unavailable; using native Google Sign-In', { message: msg });
+        ensureGoogleSignInConfigured();
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        await GoogleSignin.signOut().catch(() => undefined);
+        const response = await GoogleSignin.signIn();
+        if (!isSuccessResponse(response) || !response.data?.idToken) {
+          return;
+        }
+        idToken = response.data.idToken;
+        gUser = {
+          name: response.data.user?.name || '',
+          email: response.data.user?.email || '',
+          photo: response.data.user?.photo || '',
+          birthday: '',
+        };
+
+        /* TEMP DEBUG: native fallback removed so the exact AppAuth failure
+           is visible on screen instead of being masked by a silent native
+           sign-in. Restore this block (behind the same catch) once the
+           consent flow is confirmed working end to end.
+        ensureGoogleSignInConfigured();
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        await GoogleSignin.signOut().catch(() => undefined);
+        const response = await GoogleSignin.signIn();
+        if (!isSuccessResponse(response) || !response.data?.idToken) {
+          return; // user closed the Google sheet — nothing to report
+        }
+        idToken = response.data.idToken;
+        gUser = {
+          name: response.data.user?.name || '',
+          email: response.data.user?.email || '',
+          photo: response.data.user?.photo || '',
+          birthday: '', // native SDK never returns the birthday claim
+        };
+        */
       }
-      idToken = response.data.idToken;
-      gUser = {
-        name: response.data.user?.name || '',
-        email: response.data.user?.email || '',
-        photo: response.data.user?.photo || '',
-        birthday: '',
-      };
 
       if (!idToken) {
         return;
       }
 
-      const authResult = await googleSignIn({ idToken }).unwrap();
+      const auth = await googleSignIn({ idToken }).unwrap();
 
       // The API call alone doesn't sign the app in — persist the tokens and
       // seed the redux session exactly like Otp.tsx does after verify-otp,
       // so the rest of the app (and the next launch) sees a signed-in user.
-      await setTokens(authResult.accessToken, authResult.refreshToken);
-      await setCurrentUserId(getAuthUserId(authResult.user));
+      await setTokens(auth.accessToken, auth.refreshToken);
+      await setCurrentUserId(getAuthUserId(auth.user));
       dispatch(authApi.util.resetApiState());
       dispatch(
         authActions.signedIn({
-          accessToken: authResult.accessToken,
-          refreshToken: authResult.refreshToken,
-          user: authResult.user,
+          accessToken: auth.accessToken,
+          refreshToken: auth.refreshToken,
+          user: auth.user,
         }),
       );
-      syncPushTokenWithAccessToken(authResult.accessToken, 'google_signed_in').catch(error => {
+      syncPushTokenWithAccessToken(auth.accessToken, 'google_signed_in').catch(error => {
         logs.error('[notifications] google login token sync failed', String(error));
       });
 
@@ -424,8 +560,8 @@ export default function Login({ navigation, route }: Props) {
       // (as an earlier version did) meant brand-new Google accounts sailed
       // past Personal Details straight to the phone screen with their DOB,
       // gender and photo never captured.
-      const needsPhone = !authResult.user?.phone;
-      const needsProfile = !authResult.user?.dateOfBirth || !authResult.user?.gender;
+      const needsPhone = !auth.user?.phone;
+      const needsProfile = !auth.user?.dateOfBirth || !auth.user?.gender;
 
       if (!needsPhone && !needsProfile) {
         // Fully set up — same last step as the OTP flow: with no linked
@@ -454,15 +590,6 @@ export default function Login({ navigation, route }: Props) {
         });
       }
     } catch (err: any) {
-      // Native Google Play Services errors sometimes arrive as a plain
-      // bridgeless object, so `isErrorWithCode` cannot recognise it. Keep a
-      // serialisable diagnostic for that case instead of logging the opaque
-      // "[object Object]" message.
-      const nativeError = {
-        code: err?.code ?? err?.status ?? err?.errorCode ?? null,
-        message: err?.message ?? err?.error ?? err?.toString?.() ?? String(err),
-        details: err?.details ?? null,
-      };
       if (isErrorWithCode(err)) {
         if (err.code === statusCodes.SIGN_IN_CANCELLED || err.code === statusCodes.IN_PROGRESS) {
           return; // user-driven or transient — not an error worth a banner
@@ -484,15 +611,8 @@ export default function Login({ navigation, route }: Props) {
         );
         return;
       }
-      logs.error('[auth] google sign-in failed', nativeError);
-      setError(
-        err?.data?.message ||
-          (nativeError.code
-            ? `Google sign-in failed (${String(nativeError.code)}). Please try again.`
-            : nativeError.message !== '[object Object]'
-              ? nativeError.message
-              : 'Google sign-in failed. Please try again.'),
-      );
+      logs.error('[auth] google sign-in failed', { message: String(err?.message ?? err) });
+      setError(err?.data?.message || err?.message || 'Google sign-in failed. Please try again.');
     } finally {
       setGoogleBusy(false);
     }

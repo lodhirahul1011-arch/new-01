@@ -134,7 +134,6 @@ app.use('/api/v1/tablet', tabletLimiter, tabletRoutes);
 app.use('/tablet', tabletLimiter, tabletRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/user', userRoutes);
-app.use('/api/user', apiLimiter, userRoutes);
 app.use('/user', apiLimiter, userRoutes);
 app.use('/uploads/avatars', express.static(path.join(process.cwd(), 'uploads', 'avatars')));
 app.use('/uploads/wallpapers', express.static(path.join(process.cwd(), 'uploads', 'wallpapers')));
