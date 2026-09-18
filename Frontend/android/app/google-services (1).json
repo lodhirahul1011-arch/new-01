@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "822625137979",
+    "project_id": "dvaari-e363c",
+    "storage_bucket": "dvaari-e363c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:822625137979:android:a2b6d38f96336f6bda331e",
+        "android_client_info": {
+          "package_name": "com.dvaari.dvari"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "822625137979-chsg1n5is46jueebjhakdvvke1b6cie7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dvaari.dvari",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "822625137979-dpgm251kc70m3j3lh5gbkgk45foe9uob.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLya1q84uscOrCnu_wI-YnHhIvZM6D2pU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "822625137979-dpgm251kc70m3j3lh5gbkgk45foe9uob.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "822625137979-dalh1esu53nbt8hgo2hs1dcre52024bk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.dvaari.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
