@@ -1,0 +1,1893 @@
+{
+  "info": {
+    "name": "Dvaari Tablet APIs - QR Pairing to Delivery/Doorbell",
+    "description": "Clean tablet-focused Postman collection. OTP login/register APIs are intentionally removed because tablet pairing now starts from QR/device credentials. Resident mobile endpoints are included only where they complete tablet flows such as QR claim, call answer, delivery confirmation and recording access.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - QR Pairing",
+      "description": "Tablet starts here. OTP login/register is intentionally excluded. The tablet creates a pairing session with bootstrap secret; resident mobile claims QR with accessToken.",
+      "item": [
+        {
+          "name": "Create Pairing Session (Tablet Bootstrap)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-tablet-bootstrap-secret",
+                "value": "{{tabletBootstrapSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Pairing #QR\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Tablet app calls this before showing QR. Requires x-tablet-bootstrap-secret.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceId\": \"{{tabletDeviceId}}\",\n  \"hardwareId\": \"{{tabletHardwareId}}\",\n  \"displayName\": \"Main Door Tablet\",\n  \"appVersion\": \"1.0.0\",\n  \"platform\": \"android_tablet\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/pairing/session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "pairing",
+                "session"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Claim Pairing QR (Resident Mobile)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Tablet #Pairing #QR\n\nSource: Final_code/src/services/api/deviceSetupApi.ts; backend/src/routes/tablet.routes.js\n\nComment: Resident app scans QR and claims the tablet. Kept because QR pairing cannot complete without this backend call.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qrToken\": \"{{tabletQrToken}}\",\n  \"displayName\": \"Main Door Tablet\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/pairing/claim",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "pairing",
+                "claim"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Tablet Device Session",
+      "description": "Device-authenticated tablet APIs after QR pairing. Use x-device-id and x-device-secret.",
+      "item": [
+        {
+          "name": "Tablet Realtime Events (SSE)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Realtime #SSE\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Streaming tablet events endpoint.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/realtime/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "realtime",
+                "events"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Tablet Config",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Config\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Tablet reads setup, owner, UI and sync state.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "config"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Tablet Setup",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Config\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Updates display/setup values. Schema: displayName/timezone/language/theme/wallpaperPreset/simpleMode/onboarding/fontSize.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Main Door Tablet\",\n  \"timezone\": \"Asia/Kolkata\",\n  \"language\": \"en\",\n  \"theme\": \"light\",\n  \"wallpaperPreset\": \"default\",\n  \"simpleModeEnabled\": false,\n  \"onboardingCompleted\": true,\n  \"fontSize\": 16\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "setup"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Tablet Wi-Fi",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Config #WiFi\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Stores tablet Wi-Fi status metadata.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ssid\": \"Home WiFi\",\n  \"connected\": true,\n  \"signalStrength\": 80,\n  \"ipAddress\": \"192.168.1.10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/setup/wifi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "setup",
+                "wifi"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Tablet Heartbeat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Presence\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Keeps tablet online/offline state fresh.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"online\",\n  \"batteryLevel\": 92,\n  \"networkType\": \"wifi\",\n  \"appVersion\": \"1.0.0\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/heartbeat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "heartbeat"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Doorbell & Visitor Flow",
+      "description": "Doorbell press, visitor session and resident response APIs.",
+      "item": [
+        {
+          "name": "Create Visitor Session / Doorbell Press",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Doorbell #Visitor\n\nSource: Tablet/src/services/api/tabletApi.ts; Tablet/src/features/home/screens/Home.tsx\n\nComment: Tablet creates this when visitor presses doorbell.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"doorbell\",\n  \"visitorName\": \"Guest\",\n  \"note\": \"Doorbell pressed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/visitor-sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "visitor-sessions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Visitor Session (Tablet)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Doorbell #Visitor\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Tablet polls/reads a specific visitor session.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/visitor-sessions/{{visitorSessionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "visitor-sessions",
+                "{{visitorSessionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Visitor Sessions (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Doorbell #Visitor\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident side list for visitor sessions.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/visitor-sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "visitor-sessions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Respond Visitor Session (Resident)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Doorbell #Visitor\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident approves/rejects/misses visitor request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"approved\",\n  \"note\": \"Please leave it at the door\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/visitor-sessions/{{visitorSessionId}}/respond",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "visitor-sessions",
+                "{{visitorSessionId}}",
+                "respond"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Initiate Doorbell Call (Tablet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Doorbell #Calls\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Tablet starts ringing/calling flow after doorbell or visitor event.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"doorbell\",\n  \"visitorSessionId\": \"{{visitorSessionId}}\",\n  \"note\": \"Doorbell call\",\n  \"source\": \"tablet\",\n  \"ringIncrement\": 1,\n  \"autoStartThreshold\": 3,\n  \"forceStart\": false,\n  \"liveVideoRequested\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "initiate"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Tablet Calls & Live Feed",
+      "description": "WebRTC signaling, call lifecycle and live feed APIs from tablet and resident sides.",
+      "item": [
+        {
+          "name": "Get Active Call (Tablet)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Calls\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Tablet checks current active call.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "active"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Device Call",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Calls\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Tablet reads call detail.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/{{tabletCallId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "{{tabletCallId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Device Call Signaling",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Calls #WebRTC\n\nSource: Tablet/src/services/liveFeed/tabletLiveFeed.ts\n\nComment: Tablet reads offer/answer/ICE signaling.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/{{tabletCallId}}/signaling",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "{{tabletCallId}}",
+                "signaling"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Device Call Signal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Calls #WebRTC\n\nSource: Tablet/src/services/liveFeed/tabletLiveFeed.ts\n\nComment: Tablet sends offer/answer/ICE candidate.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signalType\": \"offer\",\n  \"sdp\": \"{{sdp}}\",\n  \"candidate\": \"\",\n  \"sdpMid\": \"0\",\n  \"sdpMLineIndex\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/{{tabletCallId}}/signal",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "{{tabletCallId}}",
+                "signal"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pause Device Call",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Calls\n\nSource: Tablet/src/services/liveFeed/tabletLiveFeed.ts\n\nComment: Tablet pauses live video/call when camera is busy.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"camera_in_use\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/{{tabletCallId}}/pause",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "{{tabletCallId}}",
+                "pause"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resume Device Call",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Calls\n\nSource: Tablet/src/services/liveFeed/tabletLiveFeed.ts\n\nComment: Tablet resumes call after camera release.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"camera_released\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/{{tabletCallId}}/resume",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "{{tabletCallId}}",
+                "resume"
+              ]
+            }
+          }
+        },
+        {
+          "name": "End Device Call",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Calls\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Tablet ends call.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"ended_by_tablet_ui\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/{{tabletCallId}}/end",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "{{tabletCallId}}",
+                "end"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Recording Status (Tablet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Calls #Recordings\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Tablet reports recording lifecycle.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"recording\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/{{tabletCallId}}/recording-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "{{tabletCallId}}",
+                "recording-status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Device Live Feed Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #LiveFeed\n\nSource: Tablet/src/services/liveFeed/tabletLiveFeed.ts\n\nComment: Tablet reads current live feed session.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/live-feed/session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "live-feed",
+                "session"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Start Live Feed Session (Resident)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #LiveFeed\n\nSource: Final_code/src/services/api/liveFeedApi.ts\n\nComment: Resident starts/reuses live feed session.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/live-feed/session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "live-feed",
+                "session"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Live Feed Session (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #LiveFeed\n\nSource: Final_code/src/services/api/liveFeedApi.ts\n\nComment: Resident reads live feed state.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/live-feed/session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "live-feed",
+                "session"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Answer Tablet Call (Resident)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Calls\n\nSource: Final_code/src/services/api/tabletCallsApi.ts\n\nComment: Resident answers a call.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"liveVideoRequested\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/calls/{{tabletCallId}}/answer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "calls",
+                "{{tabletCallId}}",
+                "answer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Tablet Call (Resident)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Calls\n\nSource: Final_code/src/services/api/tabletCallsApi.ts\n\nComment: Resident rejects a call.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"rejected_by_resident\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/calls/{{tabletCallId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "calls",
+                "{{tabletCallId}}",
+                "reject"
+              ]
+            }
+          }
+        },
+        {
+          "name": "End Tablet Call (Resident)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Calls\n\nSource: Final_code/src/services/api/tabletCallsApi.ts\n\nComment: Resident ends call/live feed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"ended_by_resident\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/calls/{{tabletCallId}}/end",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "calls",
+                "{{tabletCallId}}",
+                "end"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Tablet Call Signal (Resident)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Calls #WebRTC\n\nSource: Final_code/src/services/api/tabletCallsApi.ts\n\nComment: Resident sends answer/ICE candidate.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signalType\": \"answer\",\n  \"sdp\": \"{{sdp}}\",\n  \"candidate\": \"\",\n  \"sdpMid\": \"0\",\n  \"sdpMLineIndex\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/calls/{{tabletCallId}}/signal",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "calls",
+                "{{tabletCallId}}",
+                "signal"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Tablet Calls (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Calls\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident lists tablet call sessions.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/calls?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "calls"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Tablet Call (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Calls\n\nSource: Final_code/src/services/api/tabletCallsApi.ts\n\nComment: Resident reads call detail.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/calls/{{tabletCallId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "calls",
+                "{{tabletCallId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Tablet Call Signaling (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Calls #WebRTC\n\nSource: Final_code/src/services/api/tabletCallsApi.ts\n\nComment: Resident reads signaling payload.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/calls/{{tabletCallId}}/signaling",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "calls",
+                "{{tabletCallId}}",
+                "signaling"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Delivery Flow On Tablet",
+      "description": "Delivery start, OTP/NFC/access-code verification, resident delivery controls and proof capture.",
+      "item": [
+        {
+          "name": "Start Delivery Session (Tablet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Delivery\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Requires orderId or awbCode.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"awbCode\": \"{{awbCode}}\",\n  \"company\": \"Amazon\",\n  \"partnerName\": \"Delivery Partner\",\n  \"title\": \"Package delivery\",\n  \"awaitResidentDecision\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/delivery-sessions/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "delivery-sessions",
+                "start"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Delivery Session (Tablet)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Delivery\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Tablet reads delivery session state.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/delivery-sessions/{{tabletDeliverySessionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "delivery-sessions",
+                "{{tabletDeliverySessionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Delivery OTP (Tablet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Delivery #OTP\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Delivery person enters OTP on tablet.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{deliveryOtp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/delivery-sessions/{{tabletDeliverySessionId}}/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "delivery-sessions",
+                "{{tabletDeliverySessionId}}",
+                "verify-otp"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Delivery NFC (Tablet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Delivery #NFC\n\nSource: Tablet/src/services/api/tabletApi.ts\n\nComment: Schema expects exactly 10 digits.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{nfcUid10}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/delivery-sessions/{{tabletDeliverySessionId}}/verify-nfc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "delivery-sessions",
+                "{{tabletDeliverySessionId}}",
+                "verify-nfc"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Delivery Image Proof (Tablet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Delivery #Upload\n\nSource: Tablet/src/components/DeliverySnapRecorder.tsx\n\nComment: Multipart image proof captured during OTP flow.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "JPEG/PNG image proof"
+                },
+                {
+                  "key": "note",
+                  "type": "text",
+                  "value": "delivery_otp_snapshot"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/delivery-sessions/{{tabletDeliverySessionId}}/image/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "delivery-sessions",
+                "{{tabletDeliverySessionId}}",
+                "image",
+                "upload"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Delivery Recording (Tablet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Delivery #Upload\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Multipart video upload. Backend accepts video/* only.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "recording",
+                  "type": "file",
+                  "src": "",
+                  "description": "Video recording file"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/delivery-sessions/{{tabletDeliverySessionId}}/recording/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "delivery-sessions",
+                "{{tabletDeliverySessionId}}",
+                "recording",
+                "upload"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Access Code (Tablet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Delivery #AccessCode\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Verifies authorization/away-mode/backup code.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{temporaryCode}}\",\n  \"sourceHint\": \"auto\",\n  \"deliveryPersonName\": \"Delivery Partner\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/access-code/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "access-code",
+                "verify"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Delivery Sessions (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Delivery\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident lists tablet delivery sessions.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/delivery-sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "delivery-sessions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Delivery Session (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Delivery\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident reads delivery session state.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/delivery-sessions/{{tabletDeliverySessionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "delivery-sessions",
+                "{{tabletDeliverySessionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Show OTP On Tablet Call (Resident)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Delivery #Calls\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident sends OTP to tablet call screen.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{deliveryOtp}}\",\n  \"label\": \"Delivery OTP\",\n  \"expiresAt\": \"{{otpExpiresAt}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/calls/{{tabletCallId}}/show-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "calls",
+                "{{tabletCallId}}",
+                "show-otp"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Confirm Delivery From Call (Resident)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Delivery #Calls\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident confirms delivery from active call.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deliveryId\": \"{{deliveryId}}\",\n  \"verificationMethod\": \"app\",\n  \"note\": \"Approved from app\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/calls/{{tabletCallId}}/confirm-delivery",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "calls",
+                "{{tabletCallId}}",
+                "confirm-delivery"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Recordings",
+      "description": "Call/delivery recording APIs relevant to tablet flows.",
+      "item": [
+        {
+          "name": "Upload Call Recording (Tablet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-device-id",
+                "value": "{{tabletDeviceId}}",
+                "type": "text"
+              },
+              {
+                "key": "x-device-secret",
+                "value": "{{tabletDeviceSecret}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Tablet #Calls #Recordings #Upload\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Multipart video upload. Backend accepts video/* only.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "recording",
+                  "type": "file",
+                  "src": "",
+                  "description": "Video recording file"
+                },
+                {
+                  "key": "durationSeconds",
+                  "type": "text",
+                  "value": "30"
+                },
+                {
+                  "key": "note",
+                  "type": "text",
+                  "value": "doorbell_call_recording"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/{{tabletDeviceId}}/calls/{{tabletCallId}}/recordings/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "{{tabletDeviceId}}",
+                "calls",
+                "{{tabletCallId}}",
+                "recordings",
+                "upload"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Recordings (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Recordings\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident lists tablet recordings.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/recordings?limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "recordings"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Recording (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Recordings\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident reads recording metadata.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/recordings/{{recordingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "recordings",
+                "{{recordingId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Recording Thumbnail (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Recordings\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Resident downloads recording thumbnail.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/recordings/{{recordingId}}/thumbnail",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "recordings",
+                "{{recordingId}}",
+                "thumbnail"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Recording Temporary Link (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tags: #Mobile #Recordings\n\nSource: Final_code/src/services/api/recordingsApi.ts\n\nComment: Generates temporary recording link.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/recordings/{{recordingId}}/link?expiresIn=900",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "recordings",
+                "{{recordingId}}",
+                "link"
+              ],
+              "query": [
+                {
+                  "key": "expiresIn",
+                  "value": "900"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Open Temp Recording Link",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Tags: #Public #Recordings\n\nSource: backend/src/routes/tablet.routes.js\n\nComment: Temporary recording URL opened without device/auth headers.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tablet/recordings/temp/{{recordingTempToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tablet",
+                "recordings",
+                "temp",
+                "{{recordingTempToken}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "tabletBootstrapSecret",
+      "value": ""
+    },
+    {
+      "key": "tabletQrToken",
+      "value": ""
+    },
+    {
+      "key": "tabletDeviceId",
+      "value": "tablet-demo-01"
+    },
+    {
+      "key": "tabletHardwareId",
+      "value": "tablet-hw-01"
+    },
+    {
+      "key": "tabletDeviceSecret",
+      "value": ""
+    }
+  ]
+}

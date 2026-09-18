@@ -1,0 +1,179 @@
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.facebook.react"
+apply plugin: "com.google.gms.google-services"
+
+
+react {
+    autolinkLibrariesWithApp()
+}
+
+def enableProguardInReleaseBuilds = false
+
+def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+def debugApiBaseUrl = "http://192.168.1.7:5000"
+def releaseApiBaseUrl = "https://api.grahnetra.com"
+def androidVersionCode = 2
+def androidVersionName = "1.0.1"
+logger.lifecycle("logs.info [android] debug API base URL configured as ${debugApiBaseUrl}")
+logger.lifecycle("logs.info [android] release app version configured as ${androidVersionName} (${androidVersionCode})")
+if (!debugApiBaseUrl.startsWith("http://") && !debugApiBaseUrl.startsWith("https://")) {
+    logger.error("logs.error [android] debug API base URL is missing http/https protocol")
+}
+if (androidVersionCode <= 1) {
+    logger.error("logs.error [android] release versionCode must be incremented before Play upload")
+}
+def releaseStoreFile = project.findProperty("MYAPP_UPLOAD_STORE_FILE") ?: System.getenv("MYAPP_UPLOAD_STORE_FILE")
+def releaseStorePassword = project.findProperty("MYAPP_UPLOAD_STORE_PASSWORD") ?: System.getenv("MYAPP_UPLOAD_STORE_PASSWORD")
+def releaseKeyAlias = project.findProperty("MYAPP_UPLOAD_KEY_ALIAS") ?: System.getenv("MYAPP_UPLOAD_KEY_ALIAS")
+def releaseKeyPassword = project.findProperty("MYAPP_UPLOAD_KEY_PASSWORD") ?: System.getenv("MYAPP_UPLOAD_KEY_PASSWORD")
+def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
+android {
+    ndkVersion rootProject.ext.ndkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdk rootProject.ext.compileSdkVersion
+
+    namespace "com.dvaari.dvari"
+    defaultConfig {
+        applicationId "com.dvaari.dvari"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters "arm64-v8a"
+        }
+
+        versionCode androidVersionCode
+        versionName androidVersionName
+        manifestPlaceholders = [usesCleartextTraffic: "false"]
+        buildConfigField "String", "API_BASE_URL", "\"${releaseApiBaseUrl}\""
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+                logger.lifecycle("logs.info [android] release signing config loaded")
+            } else {
+                logger.error("logs.error [android] release signing config missing")
+            }
+        }
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+            manifestPlaceholders = [usesCleartextTraffic: "true"]
+            buildConfigField "String", "API_BASE_URL", "\"${debugApiBaseUrl}\""
+        }
+        release {
+            manifestPlaceholders = [usesCleartextTraffic: "false"]
+            buildConfigField "String", "API_BASE_URL", "\"${releaseApiBaseUrl}\""
+            if (!hasReleaseSigning) {
+                throw new GradleException("Missing release signing config. Set MYAPP_UPLOAD_STORE_FILE, MYAPP_UPLOAD_STORE_PASSWORD, MYAPP_UPLOAD_KEY_ALIAS, and MYAPP_UPLOAD_KEY_PASSWORD outside version control.")
+            }
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+}
+
+tasks.register("patchReactNativeEntryPointPackage") {
+    dependsOn("generateReactNativeEntryPoint")
+    doLast {
+        try {
+            def entryPointFile = file("$buildDir/generated/autolinking/src/main/java/com/facebook/react/ReactNativeApplicationEntryPoint.java")
+            if (!entryPointFile.exists()) {
+                logger.lifecycle("logs.info [android] React Native entry point not generated yet")
+                return
+            }
+
+            def packageName = android.namespace
+            def originalText = entryPointFile.getText("UTF-8")
+            def patchedText = originalText
+                .replaceAll(/com\.dwar\.BuildConfig/, "${packageName}.BuildConfig")
+                .replaceAll(/com\.dwaari\.dvari\.BuildConfig/, "${packageName}.BuildConfig")
+
+            if (patchedText != originalText) {
+                entryPointFile.setText(patchedText, "UTF-8")
+                logger.lifecycle("logs.info [android] patched React Native entry point package to ${packageName}")
+            } else {
+                logger.lifecycle("logs.info [android] React Native entry point package already uses ${packageName}")
+            }
+        } catch (Exception error) {
+            logger.error("logs.error [android] failed to patch React Native entry point package: ${error.message}")
+            throw error
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name == "compileDebugJavaWithJavac" || task.name == "compileReleaseJavaWithJavac") {
+        task.dependsOn("patchReactNativeEntryPointPackage")
+    }
+}
+
+dependencies {
+    implementation("com.facebook.react:react-android")
+    implementation("androidx.core:core-ktx:1.13.1")
+    logger.lifecycle("logs.info [android] AndroidX Photo Picker backport dependency enabled")
+    implementation("androidx.activity:activity:1.9.3")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation 'org.jitsi:webrtc:124.+'
+    implementation platform('com.google.firebase:firebase-bom:34.12.0')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-messaging'
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+
+    if (hermesEnabled.toBoolean()) {
+        implementation("com.facebook.react:hermes-android")
+    } else {
+        implementation jscFlavor
+    }
+}
+
+def isWindowsHost = System.properties['os.name']
+    ?.toLowerCase()
+    ?.contains('windows')
+
+if (isWindowsHost) {
+    gradle.projectsEvaluated {
+        gradle.startParameter.excludedTaskNames.addAll([
+            ":app:externalNativeBuildCleanDebug",
+            ":app:externalNativeBuildCleanRelease",
+            "externalNativeBuildCleanDebug",
+            "externalNativeBuildCleanRelease",
+        ])
+
+        tasks.matching { task ->
+            task.name.startsWith("externalNativeBuildClean")
+        }.configureEach { task ->
+            task.enabled = false
+            task.actions.clear()
+            task.onlyIf { false }
+            task.doLast {}
+        }
+
+        tasks.named("clean").configure {
+            delete(file("${projectDir}/.cxx"))
+            delete(file("${buildDir}/.cxx"))
+            delete(file("${buildDir}/intermediates/cxx"))
+            delete(rootProject.file(".cxx"))
+        }
+    }
+}

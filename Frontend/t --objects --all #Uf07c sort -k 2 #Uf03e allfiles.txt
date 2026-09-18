@@ -1,0 +1,84 @@
+[33mcommit 17e931366162f273945d7a5b1daa799d9f5abed2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Ujjwal singh chouhan <chouhanujjwalsingh20@gmail.com>
+Date:   Thu May 21 10:55:30 2026 +0530
+
+    final commit
+
+ .../permmisons/AI_Voice_Agent_SaaS_Proposal.pdf    | 124 [31m---------------------[m
+ src/config/env.ts                                  |   4 [32m+[m[31m-[m
+ 2 files changed, 2 insertions(+), 126 deletions(-)
+
+[33mcommit 02458a381a9adaad339702e618c168c8a80cb293[m
+Author: Ujjwal singh chouhan <chouhanujjwalsingh20@gmail.com>
+Date:   Thu May 21 10:42:15 2026 +0530
+
+    fixing
+
+ .../com/dwar/nativecall/NativeAudioCallManager.kt  | 25 [32m++++++++++++++++++++[m[31m--[m
+ .../java/com/dwar/nativecall/NativeCallStore.kt    | 15 [32m+++++++++++[m[31m--[m
+ .../com/dwar/nativecall/NativeDeviceCallBusy.kt    | 12 [32m+++++++++[m[31m--[m
+ 3 files changed, 46 insertions(+), 6 deletions(-)
+
+[33mcommit e275db9fdde77db50e7476da4bc2da0557403720[m
+Author: Ujjwal singh chouhan <chouhanujjwalsingh20@gmail.com>
+Date:   Thu May 21 02:07:57 2026 +0530
+
+    sdkfj skdfa
+
+ src/features/home/hooks/useTabletAudioCall.ts | 2 [32m+[m[31m-[m
+ src/features/home/screens/ActiveCall.tsx      | 6 [32m+++++[m[31m-[m
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+[33mcommit 1350e95eb5465c15647b0a07b9d7c8db36d2b68c[m
+Author: Ujjwal singh chouhan <chouhanujjwalsingh20@gmail.com>
+Date:   Thu May 21 02:00:34 2026 +0530
+
+    ,j kj
+
+ .../icons/permmisons/Unconfirmed 822479.crdownload  | Bin [31m893175723[m -> [32m0[m bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+[33mcommit 0b8b04bb767f7bfd41c028ab921e995597bf3c35[m
+Author: Ujjwal singh chouhan <chouhanujjwalsingh20@gmail.com>
+Date:   Thu May 21 01:48:10 2026 +0530
+
+    dsasdfas
+
+ .../java/com/dwar/nativecall/NativeCallNotifier.kt |   6 [32m+[m[31m-[m
+ .../java/com/dwar/nativecall/NativeCallStore.kt    |  12 [32m++++[m
+ .../com/dwar/nativecall/NativeTabletCallClient.kt  |  72 [32m+++++++++++++++++++[m[31m--[m
+ .../icons/permmisons/Unconfirmed 822479.crdownload | Bin [31m0[m -> [32m893175723[m bytes
+ src/config/env.ts                                  |   4 [32m+[m[31m-[m
+ src/services/notifications/pushNotifications.ts    |   9 [32m++[m[31m-[m
+ 6 files changed, 93 insertions(+), 10 deletions(-)
+
+[33mcommit 424b8c7c3eaaa5beb23c3678a16fbc981be9cb28[m
+Author: Ujjwal singh chouhan <chouhanujjwalsingh20@gmail.com>
+Date:   Thu May 21 01:45:44 2026 +0530
+
+    kjkj k
+
+ .../icons/permmisons/Unconfirmed 822479.crdownload  | Bin [31m893175723[m -> [32m0[m bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+[33mcommit 0f32cd4c678bfb19a79e827f092a6a036a936a7b[m
+Author: Ujjwal singh chouhan <chouhanujjwalsingh20@gmail.com>
+Date:   Thu May 21 01:25:05 2026 +0530
+
+    sdlfasldfa
+
+ README.md                                          |  1 [32m+[m
+ .../com/dwar/nativecall/NativeCallActionHandler.kt |  6 [32m+++++[m
+ .../java/com/dwar/nativecall/NativeCallNotifier.kt | 28 [32m+++++++++++++++++++++[m[31m-[m
+ .../nativecall/NativeFirebaseMessagingReceiver.kt  |  2 [32m+[m[31m-[m
+ 4 files changed, 35 insertions(+), 2 deletions(-)
+
+[33mcommit 8c44e45c25889d1d339541dee671278920520e94[m
+Author: Ujjwal singh chouhan <chouhanujjwalsingh20@gmail.com>
+Date:   Thu May 21 00:34:27 2026 +0530
+
+    ios
+
+ README.md      | 16 [32m+++++++++++[m
+ codemagic.yaml | 85 [32m++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ 2 files changed, 101 insertions(+)

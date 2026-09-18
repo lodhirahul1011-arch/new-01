@@ -1,0 +1,109 @@
+workflows:
+  ios-debug-unsigned:
+    name: iOS Debug Unsigned
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      node: v22.11.0
+      ruby: "3.3.6"
+      xcode: latest
+      cocoapods: default
+      vars:
+        XCODE_WORKSPACE: "dwar.xcworkspace"
+        XCODE_SCHEME: "dwar"
+    cache:
+      cache_paths:
+        - ~/.npm
+        - ~/Library/Caches/CocoaPods
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          echo "logs.info [codemagic] installing npm dependencies"
+          npm ci
+      - name: Prepare iOS Firebase config
+        script: |
+          echo "logs.info [codemagic] preparing optional iOS Firebase config"
+          if [ -n "$IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64" ]; then
+            ruby -rbase64 -e 'File.binwrite(ARGV[0], Base64.decode64(ENV.fetch("IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64")))' ios/dwar/GoogleService-Info.plist || { echo "logs.error [codemagic] failed to decode iOS Firebase config"; exit 1; }
+            echo "logs.info [codemagic] wrote ios/dwar/GoogleService-Info.plist"
+          else
+            echo "logs.info [codemagic] IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 not set; continuing without Firebase plist injection"
+          fi
+      - name: Install Ruby and CocoaPods dependencies
+        script: |
+          echo "logs.info [codemagic] installing Ruby gems and CocoaPods"
+          echo "logs.info [codemagic] using Ruby $(ruby --version)"
+          echo "logs.info [codemagic] using Bundler $(bundle --version)"
+          bundle install || { echo "logs.error [codemagic] Ruby gem install failed"; exit 1; }
+          cd ios
+          bundle exec pod install || { echo "logs.error [codemagic] CocoaPods install failed"; exit 1; }
+      - name: Build iOS debug without code signing
+        script: |
+          echo "logs.info [codemagic] building unsigned iOS debug app"
+          xcodebuild \
+            -workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build || { echo "logs.error [codemagic] unsigned iOS debug build failed"; exit 1; }
+    artifacts:
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - /tmp/xcodebuild_logs/*.log
+
+  ios-release-signed:
+    name: iOS Release Signed IPA
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: dwaari-app-store-connect
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.dvaari.dvari
+      node: v22.11.0
+      ruby: "3.3.6"
+      xcode: latest
+      cocoapods: default
+      vars:
+        XCODE_WORKSPACE: "dwar.xcworkspace"
+        XCODE_SCHEME: "dwar"
+    cache:
+      cache_paths:
+        - ~/.npm
+        - ~/Library/Caches/CocoaPods
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          echo "logs.info [codemagic] installing npm dependencies"
+          npm ci
+      - name: Prepare iOS Firebase config
+        script: |
+          echo "logs.info [codemagic] preparing optional iOS Firebase config"
+          if [ -n "$IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64" ]; then
+            ruby -rbase64 -e 'File.binwrite(ARGV[0], Base64.decode64(ENV.fetch("IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64")))' ios/dwar/GoogleService-Info.plist || { echo "logs.error [codemagic] failed to decode iOS Firebase config"; exit 1; }
+            echo "logs.info [codemagic] wrote ios/dwar/GoogleService-Info.plist"
+          else
+            echo "logs.info [codemagic] IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 not set; continuing without Firebase plist injection"
+          fi
+      - name: Install Ruby and CocoaPods dependencies
+        script: |
+          echo "logs.info [codemagic] installing Ruby gems and CocoaPods"
+          echo "logs.info [codemagic] using Ruby $(ruby --version)"
+          echo "logs.info [codemagic] using Bundler $(bundle --version)"
+          bundle install || { echo "logs.error [codemagic] Ruby gem install failed"; exit 1; }
+          cd ios
+          bundle exec pod install || { echo "logs.error [codemagic] CocoaPods install failed"; exit 1; }
+      - name: Set up Xcode code signing
+        script: |
+          echo "logs.info [codemagic] applying provisioning profiles to Xcode project"
+          xcode-project use-profiles || { echo "logs.error [codemagic] code signing setup failed"; exit 1; }
+      - name: Build signed IPA
+        script: |
+          echo "logs.info [codemagic] building signed iOS IPA"
+          xcode-project build-ipa \
+            --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" || { echo "logs.error [codemagic] signed IPA build failed"; exit 1; }
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log

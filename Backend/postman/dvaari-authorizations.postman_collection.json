@@ -1,0 +1,294 @@
+{
+  "info": {
+    "name": "Dvaari Authorizations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Authorization module APIs for delivery access, details page, activity log, mark used, and revoke flows."
+  },
+  "item": [
+    {
+      "name": "Authorizations",
+      "item": [
+        {
+          "name": "Generate Access Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/authorizations/generate-code",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "authorizations",
+                "generate-code"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"ok\": true,\n  \"message\": \"Access code generated successfully\",\n  \"data\": {\n    \"accessCode\": \"2536\",\n    \"length\": 4\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Authorization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+               "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Amazon Delivery\",\n  \"scheduleType\": \"TODAY\",\n  \"startDate\": \"2026-02-19\",\n  \"endDate\": \"2026-02-19\",\n  \"startTime\": \"14:00\",\n  \"endTime\": \"18:00\",\n  \"company\": \"Amazon\",\n  \"purpose\": \"delivery\",\n  \"otpRequired\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/authorizations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "authorizations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"ok\": true,\n  \"message\": \"Authorization created successfully\",\n  \"data\": {\n    \"_id\": \"auth123\",\n    \"id\": \"auth123\",\n    \"name\": \"Amazon Delivery\",\n    \"accessCode\": \"2536\",\n    \"scheduleType\": \"TODAY\",\n    \"scheduleTypeLabel\": \"Today\",\n    \"validTimeWindow\": \"2:00 PM - 6:00 PM\",\n    \"status\": \"ACTIVE\",\n    \"statusLabel\": \"Active\",\n    \"otpVerificationStatus\": \"not_required\",\n    \"canRevoke\": true\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Authorization List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/authorizations?status=ALL&page=1&limit=10&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "authorizations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"ok\": true,\n  \"message\": \"Authorizations fetched successfully\",\n  \"data\": {\n    \"summary\": {\n      \"total\": 2,\n      \"active\": 1,\n      \"used\": 1,\n      \"completed\": 1,\n      \"expired\": 0,\n      \"cancelled\": 0\n    },\n    \"filters\": {\n      \"selectedStatus\": \"ALL\",\n      \"selectedScheduleType\": \"ALL\",\n      \"selectedMonth\": null,\n      \"search\": \"\"\n    },\n    \"items\": [\n      {\n        \"_id\": \"auth123\",\n        \"id\": \"auth123\",\n        \"name\": \"Amazon Delivery\",\n        \"accessCode\": \"2536\",\n        \"scheduleType\": \"TODAY\",\n        \"validTimeWindow\": \"2:00 PM - 6:00 PM\",\n        \"status\": \"ACTIVE\",\n        \"statusLabel\": \"Active\",\n        \"deliveryPersonName\": \"\",\n        \"otpVerificationStatus\": \"not_required\",\n        \"canRevoke\": true\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 10,\n      \"totalItems\": 2,\n      \"totalPages\": 1,\n      \"hasNextPage\": false\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Authorization Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/authorizations/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "authorizations",
+                "summary"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"ok\": true,\n  \"message\": \"Authorization summary fetched successfully\",\n  \"data\": {\n    \"total\": 5,\n    \"active\": 2,\n    \"used\": 1,\n    \"completed\": 1,\n    \"expired\": 1,\n    \"cancelled\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Activity Log",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/authorizations/activity-log?status=ALL&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "authorizations",
+                "activity-log"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"ok\": true,\n  \"message\": \"Authorization activity log fetched successfully\",\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"auth123\",\n        \"name\": \"Amazon Delivery\",\n        \"accessCode\": \"2536\",\n        \"status\": \"USED\",\n        \"statusLabel\": \"Completed\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 10,\n      \"totalItems\": 1,\n      \"totalPages\": 1,\n      \"hasNextPage\": false\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Authorization Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/authorizations/{{authorizationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "authorizations",
+                "{{authorizationId}}"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"ok\": true,\n  \"message\": \"Authorization detail fetched successfully\",\n  \"data\": {\n    \"id\": \"auth123\",\n    \"name\": \"Amazon Delivery\",\n    \"accessCode\": \"2536\",\n    \"scheduleType\": \"TODAY\",\n    \"scheduleTypeLabel\": \"Today\",\n    \"startDate\": \"2026-02-19\",\n    \"endDate\": \"2026-02-19\",\n    \"startTime\": \"14:00\",\n    \"endTime\": \"18:00\",\n    \"status\": \"ACTIVE\",\n    \"statusLabel\": \"Active\",\n    \"createdDateLabel\": \"Feb 19, 2026, 10:00 AM\",\n    \"usedDateLabel\": \"\",\n    \"otpVerificationStatus\": \"not_required\",\n    \"canRevoke\": true\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mark Used",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otpVerified\": true,\n  \"verificationMethod\": \"otp\",\n  \"deliveryPersonName\": \"Amazon Delivery Partner\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/authorizations/{{authorizationId}}/use",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "authorizations",
+                "{{authorizationId}}",
+                "use"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"ok\": true,\n  \"message\": \"Authorization updated successfully\",\n  \"data\": {\n    \"id\": \"auth123\",\n    \"status\": \"USED\",\n    \"statusLabel\": \"Completed\",\n    \"otpVerificationStatus\": \"verified\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Revoke Authorization",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"revoked_by_user\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/authorizations/{{authorizationId}}/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "authorizations",
+                "{{authorizationId}}",
+                "revoke"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"ok\": true,\n  \"message\": \"Authorization revoked successfully\",\n  \"data\": {\n    \"id\": \"auth123\",\n    \"status\": \"CANCELLED\",\n    \"statusLabel\": \"Cancelled\",\n    \"canRevoke\": false\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

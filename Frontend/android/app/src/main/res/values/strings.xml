@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Dvaari</string>
+    <string name="default_notification_channel_id">dvaari-alerts-v3</string>
+    <string name="delivery_notification_listener_label">Dvaari delivery notification access</string>
+    <string name="delivery_reminder_channel_id">dvaari-delivery-reminders</string>
+    <string name="delivery_reminder_channel_name">Delivery reminders</string>
+</resources>
+
