@@ -54,6 +54,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'QrScanner'>;
 const CANVAS_W = 360;
 
 function getApiErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
   const data = (error as { data?: { error?: string; message?: string } })?.data;
   return data?.error || data?.message || 'Could not link the device. Please try again.';
 }
@@ -71,6 +72,25 @@ type ParsedQrPayload = {
   apiBaseUrl?: string;
   type?: string;
 };
+
+// Pairing is deliberately not a general-purpose barcode scanner.  The only
+// payload we may send to the pairing APIs is a token issued by a Dvaari
+// device.  Keeping this check on the phone means an unrelated QR (UPI,
+// product barcode, web link, etc.) never even reaches the backend.
+const DVAARI_PAIRING_TOKEN = /^PAIR_[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{10,}$/;
+
+function assertDvaariPairingPayload(payload: ParsedQrPayload, scanType: 'device' | 'box') {
+  if (!DVAARI_PAIRING_TOKEN.test(payload.qrToken)) {
+    throw new Error('This is not a Dvaari device pairing QR code. Scan the QR shown on your Dvaari device.');
+  }
+
+  // A tablet payload must only be claimed from the device-pairing screen.
+  // This prevents a QR intended for another setup flow from being accepted
+  // merely because it happens to contain a PAIR_ token.
+  if (scanType === 'box' && isTabletPairingQr(payload)) {
+    throw new Error('This QR belongs to a Dvaari device. Please scan a Dvaari box QR code.');
+  }
+}
 
 function normalizeBaseUrl(value?: string) {
   return String(value || '').trim().replace(/\/+$/, '');
@@ -342,6 +362,7 @@ export default function QrScannerScreen({ navigation, route }: Props) {
     try {
       logs.info('[qr-scanner] QR processing started');
       const qrPayload = parseQrPayload(value);
+      assertDvaariPairingPayload(qrPayload, type);
       logs.info('[qr-scanner] QR payload parsed', {
         type,
         qrType: qrPayload.type,
@@ -358,14 +379,6 @@ export default function QrScannerScreen({ navigation, route }: Props) {
           await claimDevicePairing({ qrToken: qrPayload.qrToken }).unwrap();
         }
       } else {
-        if (isTabletPairingQr(qrPayload)) {
-          throw {
-            data: {
-              error: 'This QR belongs to a Dvaari device. Please scan a Dvaari box QR code.',
-            },
-          };
-        }
-
         await linkDevice({ qrToken: qrPayload.qrToken }).unwrap();
       }
 
@@ -422,7 +435,24 @@ export default function QrScannerScreen({ navigation, route }: Props) {
         return;
       }
 
-      await onQrDetected(values[0]);
+      // Some image decoders return values for non-QR barcodes too.  Do not
+      // let the first decoded value decide the pairing flow unless it is a
+      // Dvaari-issued pairing token.
+      const pairingValue = values.find((value: string) => {
+        try {
+          return DVAARI_PAIRING_TOKEN.test(parseQrPayload(value).qrToken);
+        } catch {
+          return false;
+        }
+      });
+
+      if (!pairingValue) {
+        setErrorMessage('Selected image does not contain a Dvaari device pairing QR code.');
+        setState('error');
+        return;
+      }
+
+      await onQrDetected(pairingValue);
     } catch (error) {
       logs.error('[qr-scanner] upload QR failed', error);
       setErrorMessage('Could not read QR code from the selected image.');
