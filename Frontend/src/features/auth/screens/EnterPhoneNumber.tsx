@@ -141,6 +141,14 @@ export default function EnterPhoneNumber({ navigation, route }: Props) {
         flow: 'login',
         otpSessionId: response.otpSessionId,
         debugCode: response.debugCode,
+        // A Google sign-up lands here after Personal Details — carry the
+        // identity forward. Otp only needs these if it has to route into
+        // PersonalDetails (nameless-account fallback); the normal link-verify
+        // path completes without showing the details page again.
+        prefillName: route.params?.googleName,
+        prefillDob: route.params?.googleDob,
+        prefillGender: route.params?.googleGender,
+        prefillPhoto: route.params?.googlePhoto,
       });
     } catch (err: any) {
       const apiMessage =

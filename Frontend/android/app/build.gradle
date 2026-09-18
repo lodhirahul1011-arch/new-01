@@ -47,7 +47,10 @@ android {
 
         versionCode androidVersionCode
         versionName androidVersionName
-        manifestPlaceholders = [usesCleartextTraffic: "false"]
+        manifestPlaceholders = [
+            usesCleartextTraffic: "false",
+            appAuthRedirectScheme: "com.googleusercontent.apps.822625137979-chsg1n5is46jueebjhakdvvke1b6cie7"
+        ]
         buildConfigField "String", "API_BASE_URL", "\"${releaseApiBaseUrl}\""
     }
 
@@ -74,11 +77,17 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
-            manifestPlaceholders = [usesCleartextTraffic: "true"]
+            manifestPlaceholders = [
+                usesCleartextTraffic: "true",
+                appAuthRedirectScheme: "com.googleusercontent.apps.822625137979-chsg1n5is46jueebjhakdvvke1b6cie7"
+            ]
             buildConfigField "String", "API_BASE_URL", "\"${debugApiBaseUrl}\""
         }
         release {
-            manifestPlaceholders = [usesCleartextTraffic: "false"]
+            manifestPlaceholders = [
+                usesCleartextTraffic: "false",
+                appAuthRedirectScheme: "com.googleusercontent.apps.822625137979-chsg1n5is46jueebjhakdvvke1b6cie7"
+            ]
             buildConfigField "String", "API_BASE_URL", "\"${releaseApiBaseUrl}\""
             if (!hasReleaseSigning) {
                 throw new GradleException("Missing release signing config. Set MYAPP_UPLOAD_STORE_FILE, MYAPP_UPLOAD_STORE_PASSWORD, MYAPP_UPLOAD_KEY_ALIAS, and MYAPP_UPLOAD_KEY_PASSWORD outside version control.")
