@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# User uploads / runtime data
+Backend/private_uploads/
+Backend/uploads/
+uploads/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Local tooling state
+.freebuff/
+tmp/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Android build outputs (the committed JS bundle in
+# android/app/src/main/assets/index.android.bundle is intentional —
+# this project ships a prebuilt bundle that gradle does not regenerate)
+Frontend/android/.gradle/
+Frontend/android/app/build/
+Frontend/android/build/
+Frontend/android/local.properties
+*.jks
+!debug.keystore
+
+# iOS
+Frontend/ios/Pods/
+Frontend/ios/build/
+
+# Editor
+.idea/
+.vscode/

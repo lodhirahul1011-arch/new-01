@@ -1,0 +1,203 @@
+{
+  "info": {
+    "name": "Dvaari Away Mode and Backup",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Away Mode overview, schedule, temporary code, safe drop, video recording, and backup assignment APIs."
+  },
+  "item": [
+    {
+      "name": "Away Mode",
+      "item": [
+        {
+          "name": "Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/away-mode/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "away-mode", "overview"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Away Mode",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/away-mode/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "away-mode", "toggle"]
+            }
+          }
+        },
+        {
+          "name": "Save Schedule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timezone\": \"Asia/Kolkata\",\n  \"startTime\": \"08:30\",\n  \"endTime\": \"18:00\",\n  \"repeatDays\": [\"mon\", \"tue\", \"wed\", \"thu\", \"fri\"],\n  \"preset\": \"business_hours\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/away-mode/schedule",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "away-mode", "schedule"]
+            }
+          }
+        },
+        {
+          "name": "Generate Temporary Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"forceRegenerate\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/away-mode/temporary-code",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "away-mode", "temporary-code"]
+            }
+          }
+        },
+        {
+          "name": "Update Safe Drop",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"mode\": \"low_value_only\",\n  \"maxValue\": 2000,\n  \"currency\": \"INR\",\n  \"instructions\": \"Package will be left at designated safe drop location with video recording.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/away-mode/safe-drop",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "away-mode", "safe-drop"]
+            }
+          }
+        },
+        {
+          "name": "Update Video Recording",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"mode\": \"away_only\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/away-mode/video-recording",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "away-mode", "video-recording"]
+            }
+          }
+        },
+        {
+          "name": "Get Presets",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/away-mode/presets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "away-mode", "presets"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Backup",
+      "item": [
+        {
+          "name": "Backup Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/backup/overview?deliveryId={{deliveryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "backup", "overview"]
+            }
+          }
+        },
+        {
+          "name": "Assign Backup Person",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guestName\": \"Manasvi Rastogi\",\n  \"deliveryId\": \"{{deliveryId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/backup/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "backup", "assign"]
+            }
+          }
+        },
+        {
+          "name": "List Backup Assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/backup/assignments?status=all&page=1&limit=20&deliveryId={{deliveryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "backup", "assignments"]
+            }
+          }
+        },
+        {
+          "name": "Revoke Backup Assignment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/backup/assignments/{{backupAssignmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "backup", "assignments", "{{backupAssignmentId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

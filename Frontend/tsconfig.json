@@ -1,0 +1,13 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "types": ["jest"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.d.ts",
+    "src/features/delivery/screens/DeliveryHistory"
+  ],
+  "exclude": ["**/node_modules", "**/Pods"]
+}
