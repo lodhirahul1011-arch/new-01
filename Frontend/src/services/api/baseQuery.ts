@@ -4,7 +4,7 @@ import type {
   FetchArgs,
   FetchBaseQueryError,
 } from '@reduxjs/toolkit/query';
-import { API_BASE_URL } from '../../config/env';
+import { API_BASE_URL, API_BASE_URL_FALLBACKS } from '../../config/env';
 import {
   getAccessToken,
   getRefreshToken,
@@ -23,6 +23,37 @@ let refreshInFlight: Promise<RefreshOutcome> | null = null;
 let lastRefreshFailureAt = 0;
 const REFRESH_FAILURE_COOLDOWN_MS = 20000;
 
+const responseHandler = async (response: Response) => {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const status = response.status;
+    logs.error('[api] non-JSON server response blocked from the UI', {
+      status,
+      contentType: response.headers.get('content-type') || '',
+      error: String(error),
+    });
+
+    if (status === 413) {
+      logs.info('[api] oversized payload response normalized', { status });
+      return {
+        ok: false,
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'The selected file is too large. Please choose a smaller file.',
+      };
+    }
+
+    logs.info('[api] generic server response selected', { status });
+    return {
+      ok: false,
+      code: 'INVALID_SERVER_RESPONSE',
+      message: 'Something went wrong. Please try again.',
+    };
+  }
+};
+
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_BASE_URL,
   prepareHeaders: async headers => {
@@ -33,37 +64,20 @@ const rawBaseQuery = fetchBaseQuery({
     }
     return headers;
   },
-  responseHandler: async response => {
-    const text = await response.text();
-    if (!text) return null;
-    try {
-      return JSON.parse(text);
-    } catch (error) {
-      const status = response.status;
-      logs.error('[api] non-JSON server response blocked from the UI', {
-        status,
-        contentType: response.headers.get('content-type') || '',
-        error: String(error),
-      });
-
-      if (status === 413) {
-        logs.info('[api] oversized payload response normalized', { status });
-        return {
-          ok: false,
-          code: 'PAYLOAD_TOO_LARGE',
-          message: 'The selected file is too large. Please choose a smaller file.',
-        };
-      }
-
-      logs.info('[api] generic server response selected', { status });
-      return {
-        ok: false,
-        code: 'INVALID_SERVER_RESPONSE',
-        message: 'Something went wrong. Please try again.',
-      };
-    }
-  },
+  responseHandler,
 });
+
+const fallbackBaseQueries = API_BASE_URL_FALLBACKS
+  .filter(baseUrl => baseUrl !== API_BASE_URL)
+  .map(baseUrl => fetchBaseQuery({
+    baseUrl,
+    prepareHeaders: async headers => {
+      const token = await getAccessToken();
+      if (token) headers.set('authorization', `Bearer ${token}`);
+      return headers;
+    },
+    responseHandler,
+  }));
 
 export const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
@@ -71,6 +85,19 @@ export const baseQueryWithReauth: BaseQueryFn<
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
   let result = await rawBaseQuery(args, api, extraOptions);
+
+  // A debug APK may be pointed at a laptop LAN address that is unavailable
+  // from the current network. Retry the same request against the configured
+  // fallback before surfacing FETCH_ERROR to auth screens.
+  if (result.error?.status === 'FETCH_ERROR') {
+    for (const fallbackBaseQuery of fallbackBaseQueries) {
+      const fallbackResult = await fallbackBaseQuery(args, api, extraOptions);
+      if (!fallbackResult.error) {
+        result = fallbackResult;
+        break;
+      }
+    }
+  }
 
   if (result.error && result.error.status === 401) {
     const refreshToken = await getRefreshToken();

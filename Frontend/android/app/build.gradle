@@ -11,7 +11,7 @@ react {
 def enableProguardInReleaseBuilds = false
 
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
-def debugApiBaseUrl = "http://192.168.1.7:5000"
+def debugApiBaseUrl = "https://api.grahnetra.com"
 def releaseApiBaseUrl = "https://api.grahnetra.com"
 def androidVersionCode = 2
 def androidVersionName = "1.0.1"

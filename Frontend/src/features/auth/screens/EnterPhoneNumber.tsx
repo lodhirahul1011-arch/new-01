@@ -149,6 +149,7 @@ export default function EnterPhoneNumber({ navigation, route }: Props) {
         prefillDob: route.params?.googleDob,
         prefillGender: route.params?.googleGender,
         prefillPhoto: route.params?.googlePhoto,
+        showAccountVerified: route.params?.googleSignup,
       });
     } catch (err: any) {
       const apiMessage =

@@ -4,7 +4,10 @@ import { logs } from '../services/logs';
 // `adb reverse tcp:5000 tcp:5000`, so use localhost rather than a stale LAN IP.
 const LOCAL_API_BASE_URL = 'http://192.168.1.7:5000'; // PC WiFi IP - change back to localhost if using emulator
 const PRODUCTION_API_BASE_URL = 'https://api.grahnetra.com';
-const USE_LOCAL_BACKEND = true; // Use local development backend
+// Final Android builds must not depend on the developer laptop's LAN IP.
+// Keep the local URL as a fallback for development, but use the deployed API
+// as the primary endpoint so Google OAuth can complete from any network.
+const USE_LOCAL_BACKEND = false;
 const isDebugBuild = (typeof __DEV__ !== 'undefined' && __DEV__) || USE_LOCAL_BACKEND;
 
 function normalizeApiBaseUrl(url: string) {

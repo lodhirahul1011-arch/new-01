@@ -62,7 +62,7 @@ export type RootStackParamList = {
   PersonalDetails:
     | {
         /** Where to go after saving; defaults to onboarding's RequestPermissions. */
-        next?: 'DeviceSetup' | 'EnterPhoneNumber';
+        next?: 'DeviceSetup' | 'EnterPhoneNumber' | 'AccountVerified';
         prefillName?: string;
         prefillDob?: string;
         prefillGender?: string;
@@ -77,6 +77,7 @@ export type RootStackParamList = {
         googleDob?: string;
         googleGender?: string;
         googlePhoto?: string;
+        googleSignup?: boolean;
       }
     | undefined;
   CountryCode: { returnTo?: 'Login' | 'EnterPhoneNumber' } | undefined;
@@ -90,6 +91,7 @@ export type RootStackParamList = {
         debugCode?: string;
         linking?: boolean;
         forcePersonalDetails?: boolean;
+        showAccountVerified?: boolean;
         prefillName?: string;
         prefillDob?: string;
         prefillGender?: string;
