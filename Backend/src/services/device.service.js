@@ -231,7 +231,10 @@ async function linkDevice({ userId, qrToken }) {
   const pairingCodeId = match[1];
   const pairingSecret = match[2];
 
-  const device = await Device.findOne({ pairingCodeId });
+  // Tablet pairing is handled only by /tablet/pairing/claim.  Keeping it out
+  // of this legacy device-link endpoint prevents a tablet QR from being
+  // claimed through the wrong flow.
+  const device = await Device.findOne({ pairingCodeId, type: { $ne: 'tablet' } });
   if (!device) {
     throw createHttpError(404, 'DEVICE_NOT_FOUND', 'Device not found');
   }

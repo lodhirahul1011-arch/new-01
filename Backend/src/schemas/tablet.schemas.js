@@ -9,7 +9,9 @@ const pairingSessionSchema = z.object({
 });
 
 const pairingClaimSchema = z.object({
-  qrToken: z.string().trim().min(10),
+  // Only accept the opaque pairing token issued by a Dvaari tablet.  A
+  // generic QR/barcode value must never enter the pairing service.
+  qrToken: z.string().trim().regex(/^PAIR_[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{10,}$/, 'Invalid Dvaari device pairing QR code'),
   displayName: z.string().trim().min(2).max(80).optional(),
 });
 

@@ -12,7 +12,9 @@ const provisionSchema = z
 
 const linkDeviceSchema = z
   .object({
-    qrToken: z.string().min(10),
+    // A link request is valid only for an opaque token created by a Dvaari
+    // device pairing session, never for an arbitrary QR/barcode string.
+    qrToken: z.string().trim().regex(/^PAIR_[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{10,}$/, 'Invalid Dvaari device pairing QR code'),
   })
   .strict();
 

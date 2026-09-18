@@ -6,6 +6,7 @@ import {
   TextInput,
   Pressable,
   Keyboard,
+  Linking,
   Platform,
   Image,
   ScrollView,
@@ -53,6 +54,11 @@ import EmailIcon from '../../../assets/icons/common/email-filled.svg';
 import CloseRoundFillIcon from '../../../assets/icons/common/close-round-fill.svg';
 import CloseRoundFillWhiteIcon from '../../../assets/icons/common/close-round-fill-white.svg';
 import { useUiScale } from '../../../theme/responsive';
+import {
+  CONTENT_POLICY_URL,
+  PRIVACY_POLICY_URL,
+  TERMS_CONDITIONS_URL,
+} from '../../../config/env';
 
 // Same 4 photos used in the onboarding carousel — reused here for the
 // Login hero's rotating banner (fileKey 0ZAjL8CnVgprbKaBMIjUqJ dropdown
@@ -78,6 +84,17 @@ const HERO_ASPECTS = HERO_IMAGES.map(src => {
 });
 
 const HERO_AUTO_SCROLL_MS = 3000;
+
+async function openLegalDocument(label: string, url: string) {
+  try {
+    const supported = await Linking.canOpenURL(url);
+    if (!supported) throw new Error('URL is not supported by this device');
+    await Linking.openURL(url);
+  } catch (error) {
+    logs.error('[login] legal link failed', { label, url, error: String(error) });
+    Alert.alert('Unable to open link', 'Please try again later.');
+  }
+}
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -864,11 +881,29 @@ export default function Login({ navigation, route }: Props) {
           ]}
         >
           By continuing, you agree to our{'\n'}
-          <Text style={styles.legalLink}>Terms of Services</Text>
+          <Text
+            style={styles.legalLink}
+            accessibilityRole="link"
+            onPress={() => openLegalDocument('terms_conditions', TERMS_CONDITIONS_URL)}
+          >
+            Terms of Services
+          </Text>
           {'  '}
-          <Text style={styles.legalLink}>Privacy Policy</Text>
+          <Text
+            style={styles.legalLink}
+            accessibilityRole="link"
+            onPress={() => openLegalDocument('privacy_policy', PRIVACY_POLICY_URL)}
+          >
+            Privacy Policy
+          </Text>
           {'  '}
-          <Text style={styles.legalLink}>Content Policy</Text>
+          <Text
+            style={styles.legalLink}
+            accessibilityRole="link"
+            onPress={() => openLegalDocument('content_policy', CONTENT_POLICY_URL)}
+          >
+            Content Policy
+          </Text>
         </Text>
         </>
         )}
@@ -1087,7 +1122,12 @@ function createStyles(scale: number) {
     },
 
     legalLink: {
+      // Explicit colour is required because nested Text inherits the parent
+      // legal copy colour by default.  These are actionable web links, so
+      // make them visibly distinct on both light and dark login themes.
+      color: '#2362EB',
       textDecorationLine: 'underline',
+      fontFamily: 'Satoshi-Medium',
     },
   });
 }
