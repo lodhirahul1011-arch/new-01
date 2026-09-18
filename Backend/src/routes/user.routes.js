@@ -18,7 +18,6 @@ const upload = multer({
 const router = express.Router();
 
 router.get('/me', requireAuth, user.getMe);
-router.post('/google-profile', requireAuth, user.googleProfile);
 router.patch('/me', requireAuth, validateBody(updateMeSchema), user.patchMe);
 router.put('/me/photo', requireAuth, upload.single('photo'), user.putPhoto);
 router.delete('/me/photo', requireAuth, user.deletePhoto);
