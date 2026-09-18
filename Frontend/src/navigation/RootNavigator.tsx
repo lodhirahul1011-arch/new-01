@@ -61,7 +61,8 @@ export type RootStackParamList = {
   CheckEmail: { destination?: string; otpSessionId?: string; debugCode?: string; linking?: boolean } | undefined;
   PersonalDetails:
     | {
-        next?: 'DeviceSetup';
+        /** Where to go after saving; defaults to onboarding's RequestPermissions. */
+        next?: 'DeviceSetup' | 'EnterPhoneNumber';
         prefillName?: string;
         prefillDob?: string;
         prefillGender?: string;

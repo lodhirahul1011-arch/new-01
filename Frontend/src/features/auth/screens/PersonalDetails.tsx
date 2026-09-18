@@ -18,7 +18,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import type { RootStackParamList } from '../../../navigation/RootNavigator';
-import { useUpdateProfileMutation } from '../../../services/api/authApi';
+import { useUpdateProfileMutation, useUploadProfilePhotoMutation } from '../../../services/api/authApi';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { useAppDispatch } from '../../../store/hooks';
 import { authActions } from '../../../store/slices/authSlice';
 import ArrowLeftSvg from '../../../assets/icons/common/arrow-back-otp.svg';
@@ -109,7 +110,7 @@ const THEME = {
   },
 };
 
-export default function PersonalDetails({ navigation }: Props) {
+export default function PersonalDetails({ navigation, route }: Props) {
   const styles = useStyles();
   const scale = useUiScale(CANVAS_W);
   const s = (n: number) => n * scale;
@@ -117,10 +118,34 @@ export default function PersonalDetails({ navigation }: Props) {
   const palette = isDark ? THEME.dark : THEME.light;
   const dispatch = useAppDispatch();
   const [updateProfile, { isLoading }] = useUpdateProfileMutation();
+  const [uploadProfilePhoto] = useUploadProfilePhotoMutation();
 
-  const [name, setName] = useState('');
-  const [dob, setDob] = useState('');
-  const [gender, setGender] = useState('');
+  // Prefills ride in from the auth flow that led here — a Google sign-up
+  // passes the account's name/photo, and any earlier step that already
+  // captured values passes them forward so the user never retypes.
+  const prefillName = route.params?.prefillName ?? '';
+  const prefillPhoto = route.params?.prefillPhoto ?? '';
+  const prefillDob = route.params?.prefillDob ?? '';
+  const prefillGender = route.params?.prefillGender ?? '';
+
+  const [name, setName] = useState(prefillName);
+  const [dob, setDob] = useState(prefillDob);
+  const [gender, setGender] = useState(prefillGender);
+  // Locally-picked profile photo (device gallery). Shown immediately; the
+  // actual upload happens with the save so it rides on the signed-in session.
+  const [localPhotoUri, setLocalPhotoUri] = useState('');
+
+  const onPickPhoto = () => {
+    launchImageLibrary(
+      { mediaType: 'photo', quality: 0.8, maxWidth: 1024, maxHeight: 1024, includeBase64: false },
+      response => {
+        const uri = response.assets?.[0]?.uri;
+        if (!response.didCancel && !response.errorCode && uri) {
+          setLocalPhotoUri(uri);
+        }
+      },
+    );
+  };
   const [genderOpen, setGenderOpen] = useState(false);
   const [dobPickerVisible, setDobPickerVisible] = useState(false);
 
@@ -185,11 +210,55 @@ export default function PersonalDetails({ navigation }: Props) {
     setOtpConsentVisible(false);
 
     try {
-      // The backend profile endpoint only accepts name/address today — date of
-      // birth and gender are captured here for the design but are not yet
-      // persisted until the API supports them.
-      const response = await updateProfile({ name: name.trim() }).unwrap();
+      // The profile endpoint mirrors updateMeSchema and accepts dateOfBirth
+      // (YYYY-MM-DD) and gender alongside name, so everything captured here
+      // is persisted in one call. DOB converts from the screen's DD/MM/YYYY
+      // display format. Note updateMeSchema is .strict() — no avatar field,
+      // so the Google photo is NOT applied here (avatar goes through the
+      // separate multipart upload endpoint only).
+      const dobMatch = dob.trim().match(DOB_REGEX);
+      const response = await updateProfile({
+        name: name.trim(),
+        ...(dobMatch && isValidDob(dob.trim())
+          ? { dateOfBirth: `${dobMatch[3]}-${dobMatch[2]}-${dobMatch[1]}` }
+          : {}),
+        gender: gender.trim(),
+      }).unwrap();
       dispatch(authActions.userUpdated(response.user));
+
+      // Photo upload is optional garnish: a failure must not block saving
+      // the rest of the profile, so it gets its own swallowed try/catch.
+      if (localPhotoUri) {
+        try {
+          await uploadProfilePhoto({ uri: localPhotoUri, name: 'profile.jpg', type: 'image/jpeg' }).unwrap();
+        } catch (photoErr) {
+          // Non-fatal — the user can re-add a photo later from settings.
+        }
+      }
+
+      // Default destination is onboarding's next step (permissions). When
+      // `next: 'EnterPhoneNumber'` is passed, this screen is the middle of a
+      // Google sign-up: the DOB/gender page runs BEFORE the phone leg, and
+      // the google* params carry the identity forward so the OTP flow can
+      // route correctly after the phone verifies.
+      const next = route.params?.next;
+      if (next === 'EnterPhoneNumber') {
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'EnterPhoneNumber',
+              params: {
+                googleName: name.trim(),
+                googleDob: `${dobMatch?.[3] ?? ''}-${dobMatch?.[2] ?? ''}-${dobMatch?.[1] ?? ''}`.replace(/^-+|-+$/g, ''),
+                googleGender: gender.trim(),
+                googlePhoto: prefillPhoto,
+              },
+            },
+          ],
+        });
+        return;
+      }
 
       navigation.reset({
         index: 0,
@@ -252,10 +321,18 @@ export default function PersonalDetails({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
         >
           <View style={[styles.avatarWrap, { marginTop: s(38) }]}>
-            <Image
-              source={require('../../../assets/images/auth/default-avatar.png')}
-              style={{ width: s(67), height: s(67), borderRadius: s(33.5) }}
-            />
+            <Pressable onPress={onPickPhoto} hitSlop={8}>
+              <Image
+                source={
+                  localPhotoUri
+                    ? { uri: localPhotoUri }
+                    : prefillPhoto
+                      ? { uri: prefillPhoto }
+                      : require('../../../assets/images/auth/default-avatar.png')
+                }
+                style={{ width: s(67), height: s(67), borderRadius: s(33.5) }}
+              />
+            </Pressable>
           </View>
 
           <Field label="Name" required s={s} marginTop={s(16)} error={nameError} palette={palette}>

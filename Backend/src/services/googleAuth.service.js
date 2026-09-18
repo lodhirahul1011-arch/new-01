@@ -65,14 +65,20 @@ async function fetchGoogleKeys({ force = false } = {}) {
 
 async function verifyGoogleIdToken(idToken, audience) {
   const token = String(idToken || '').trim();
-  const expectedAudience = String(audience || '').trim();
+  // Accept BOTH OAuth clients: the Web client (native GoogleSignin idTokens)
+  // and the Android client (AppAuth Custom-Tab flow idTokens). Each flow
+  // mints tokens with its own `aud`, so a single-audience check rejects
+  // valid users from the other flow.
+  const allowedAudiences = [audience, process.env.GOOGLE_ANDROID_CLIENT_ID]
+    .map(a => String(a || '').trim())
+    .filter(Boolean);
   if (!token) {
     const err = new Error('Google ID token is required');
     err.code = 'GOOGLE_ID_TOKEN_REQUIRED';
     err.status = 400;
     throw err;
   }
-  if (!expectedAudience) {
+  if (allowedAudiences.length === 0) {
     const err = new Error('Google sign-in is not configured');
     err.code = 'GOOGLE_SIGNIN_NOT_CONFIGURED';
     err.status = 503;
@@ -107,7 +113,8 @@ async function verifyGoogleIdToken(idToken, audience) {
   try {
     payload = jwt.verify(token, key, {
       algorithms: ['RS256'],
-      audience: expectedAudience,
+      // jsonwebtoken accepts an array here: token must match ANY listed aud.
+      audience: allowedAudiences,
       issuer: GOOGLE_ISSUERS,
       clockTolerance: 5,
     });
