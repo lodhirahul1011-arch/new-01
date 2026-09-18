@@ -47,10 +47,7 @@ android {
 
         versionCode androidVersionCode
         versionName androidVersionName
-        manifestPlaceholders = [
-            usesCleartextTraffic: "false",
-            appAuthRedirectScheme: "com.googleusercontent.apps.822625137979-chsg1n5is46jueebjhakdvvke1b6cie7"
-        ]
+        manifestPlaceholders = [usesCleartextTraffic: "false"]
         buildConfigField "String", "API_BASE_URL", "\"${releaseApiBaseUrl}\""
     }
 
@@ -77,17 +74,11 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
-            manifestPlaceholders = [
-                usesCleartextTraffic: "true",
-                appAuthRedirectScheme: "com.googleusercontent.apps.822625137979-chsg1n5is46jueebjhakdvvke1b6cie7"
-            ]
+            manifestPlaceholders = [usesCleartextTraffic: "true"]
             buildConfigField "String", "API_BASE_URL", "\"${debugApiBaseUrl}\""
         }
         release {
-            manifestPlaceholders = [
-                usesCleartextTraffic: "false",
-                appAuthRedirectScheme: "com.googleusercontent.apps.822625137979-chsg1n5is46jueebjhakdvvke1b6cie7"
-            ]
+            manifestPlaceholders = [usesCleartextTraffic: "false"]
             buildConfigField "String", "API_BASE_URL", "\"${releaseApiBaseUrl}\""
             if (!hasReleaseSigning) {
                 throw new GradleException("Missing release signing config. Set MYAPP_UPLOAD_STORE_FILE, MYAPP_UPLOAD_STORE_PASSWORD, MYAPP_UPLOAD_KEY_ALIAS, and MYAPP_UPLOAD_KEY_PASSWORD outside version control.")
@@ -142,7 +133,7 @@ dependencies {
     implementation("androidx.activity:activity:1.9.3")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation 'org.jitsi:webrtc:124.+'
-    implementation platform('com.google.firebase:firebase-bom:34.12.0')
+    implementation platform('com.google.firebase:firebase-bom:34.19.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-messaging'
     androidTestImplementation("androidx.test:core:1.6.1")
