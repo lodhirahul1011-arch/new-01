@@ -2,7 +2,7 @@ import { logs } from '../services/logs';
 
 // For debug builds, Android devices should call the local backend through
 // `adb reverse tcp:5000 tcp:5000`, so use localhost rather than a stale LAN IP.
-const LOCAL_API_BASE_URL = 'http://192.168.1.7:5000'; // PC WiFi IP - change back to localhost if using emulator
+const LOCAL_API_BASE_URL = 'http://192.168.1.4:5000'; // PC WiFi IP - change back to localhost if using emulator
 const PRODUCTION_API_BASE_URL = 'https://api.grahnetra.com';
 // Final Android builds must not depend on the developer laptop's LAN IP.
 // Keep the local URL as a fallback for development, but use the deployed API
