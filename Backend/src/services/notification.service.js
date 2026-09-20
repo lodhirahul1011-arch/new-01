@@ -114,10 +114,9 @@ function getMailer() {
 
 async function sendSmsOtp({ to, code }) {
   if (!process.env.SMS_BASE_URL || !process.env.SMS_API_KEY || !process.env.SMS_SENDER_ID || !process.env.SMS_TEMPLATE_ID) {
-    if (shouldAllowConsoleFallback()) {
-      return null;
-    }
-    throw new Error('SMS provider env missing (SMS_BASE_URL, SMS_API_KEY, SMS_SENDER_ID, SMS_TEMPLATE_ID)');
+    const error = new Error('SMS provider env missing (SMS_BASE_URL, SMS_API_KEY, SMS_SENDER_ID, SMS_TEMPLATE_ID)');
+    error.code = 'SMS_PROVIDER_NOT_CONFIGURED';
+    throw error;
   }
 
   const data = await sendSMSViaNewProvider(to, code);
@@ -174,16 +173,6 @@ async function sendOtp({ channel, to, code, purpose }) {
 
     if (channel === 'sms' || isPhone(to)) {
       const data = await sendSmsOtp({ to, code });
-      if (!data) {
-        return logConsoleOtp({
-          channel,
-          to,
-          code,
-          purpose,
-          reason: 'sms_provider_not_configured',
-        });
-      }
-
       safeLog('[OTP][SMS]', 'sent', { to, provider: 'custom_sms_provider' });
       return { ok: true, provider: 'custom_sms_provider', data };
     }
@@ -206,7 +195,7 @@ async function sendOtp({ channel, to, code, purpose }) {
 
     throw new Error('Unsupported OTP channel');
   } catch (err) {
-    if (shouldAllowConsoleFallback()) {
+    if (err.code === 'SMS_PROVIDER_NOT_CONFIGURED' && shouldAllowConsoleFallback()) {
       safeLog('[OTP][SEND]', 'fallback_to_console', {
         to,
         channel,
@@ -227,8 +216,9 @@ async function sendOtp({ channel, to, code, purpose }) {
       error: err.message,
     });
 
-    const error = new Error('Failed to send OTP');
-    error.code = 'OTP_DELIVERY_FAILED';
+    const error = new Error('OTP delivery failed. Please try again.');
+    error.code = err.code || 'OTP_DELIVERY_FAILED';
+    error.status = 503;
     error.details = err.message;
 
     throw error;

@@ -6,7 +6,7 @@ import {
   RESULTS,
 } from 'react-native-permissions';
 import type { RegisterPushTokenPayload } from '../api/notificationsApi';
-import { API_BASE_URL } from '../../config/env';
+import { API_BASE_URL, API_BASE_URL_FALLBACKS } from '../../config/env';
 import {
   navigateToActiveCallScreen,
   navigateToIncomingCallScreen,
@@ -1292,20 +1292,28 @@ export async function syncPushTokenWithAccessToken(
   }
 
   try {
-    const endpoint = `${API_BASE_URL}/api/v1/users/me/fcm-token`;
+    const tokenPath = '/api/v1/users/me/fcm-token';
     const body: { token: string; platform: 'ios' | 'android' } = {
       token,
       platform: Platform.OS === 'ios' ? 'ios' : 'android',
     };
     let activeAccessToken = normalizedAccessToken;
-    let response = await postPushToken(endpoint, activeAccessToken, body);
+    let { response, endpoint } = await postPushTokenWithFallback(
+      tokenPath,
+      activeAccessToken,
+      body,
+    );
 
     if (response.status === 401 || response.status === 403) {
       logs.info('[notifications] FCM token sync auth expired; refreshing access token');
       const refreshedAccessToken = await refreshAccessTokenForPushSync(reason);
       if (refreshedAccessToken) {
         activeAccessToken = refreshedAccessToken;
-        response = await postPushToken(endpoint, activeAccessToken, body);
+        ({ response, endpoint } = await postPushTokenWithFallback(
+          tokenPath,
+          activeAccessToken,
+          body,
+        ));
       }
     }
 
@@ -1348,18 +1356,37 @@ export async function syncPushTokenWithAccessToken(
   return token;
 }
 
-async function postPushToken(
-  endpoint: string,
+async function fetchWithApiFallback(path: string, init: RequestInit) {
+  let lastError: unknown;
+
+  for (const baseUrl of API_BASE_URL_FALLBACKS) {
+    try {
+      return await fetch(`${baseUrl}${path}`, init);
+    } catch (error) {
+      lastError = error;
+      logs.info('[notifications] API request failed; trying fallback', {
+        endpoint: `${baseUrl}${path}`,
+        error: String(error),
+      });
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+async function postPushTokenWithFallback(
+  path: string,
   accessToken: string,
   body: { token: string; platform: 'ios' | 'android' },
 ) {
+  const endpoint = `${API_BASE_URL}${path}`;
   logs.info('[notifications] posting FCM token to backend', {
     endpoint,
     platform: body.platform,
     tokenPreview: body.token.slice(0, 12),
   });
 
-  return fetch(endpoint, {
+  const response = await fetchWithApiFallback(path, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -1367,6 +1394,11 @@ async function postPushToken(
     },
     body: JSON.stringify(body),
   });
+
+  return {
+    response,
+    endpoint: response.url || endpoint,
+  };
 }
 
 async function refreshAccessTokenForPushSync(reason: string) {
@@ -1381,7 +1413,7 @@ async function refreshAccessTokenForPushSync(reason: string) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+    const response = await fetchWithApiFallback('/api/v1/auth/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

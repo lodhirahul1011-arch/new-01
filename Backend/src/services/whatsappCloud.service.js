@@ -59,6 +59,16 @@ async function sendTextMessage(to, body, options = {}) {
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      const timeoutError = new Error('WhatsApp provider timed out. Please try again.');
+      timeoutError.status = 504;
+      timeoutError.code = 'WHATSAPP_PROVIDER_TIMEOUT';
+      throw timeoutError;
+    }
+    error.status = 502;
+    error.code = error.code || 'WHATSAPP_PROVIDER_UNAVAILABLE';
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -66,7 +76,8 @@ async function sendTextMessage(to, body, options = {}) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(data?.error?.message || `WhatsApp Cloud API request failed (${response.status})`);
-    error.status = response.status;
+    error.status = 502;
+    error.code = 'WHATSAPP_PROVIDER_REJECTED';
     error.meta = data?.error || data;
     throw error;
   }
@@ -108,6 +119,16 @@ async function sendTemplateMessage(to, templateName, languageCode, components = 
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      const timeoutError = new Error('WhatsApp provider timed out. Please try again.');
+      timeoutError.status = 504;
+      timeoutError.code = 'WHATSAPP_PROVIDER_TIMEOUT';
+      throw timeoutError;
+    }
+    error.status = 502;
+    error.code = error.code || 'WHATSAPP_PROVIDER_UNAVAILABLE';
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -115,7 +136,8 @@ async function sendTemplateMessage(to, templateName, languageCode, components = 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(data?.error?.message || `WhatsApp Cloud API request failed (${response.status})`);
-    error.status = response.status;
+    error.status = 502;
+    error.code = 'WHATSAPP_PROVIDER_REJECTED';
     error.meta = data?.error || data;
     throw error;
   }
