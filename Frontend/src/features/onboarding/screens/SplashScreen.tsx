@@ -38,7 +38,7 @@ import {
   checkAppPermissions,
   hasRequiredPermissions,
 } from '../../setup/utils/permissions';
-import { DEV_SKIP_DEVICE_LINKING } from '../../../config/env';
+import { DEV_SKIP_DEVICE_LINKING, TEMP_SKIP_ONBOARDING } from '../../../config/env';
 import { useUiScale } from '../../../theme/responsive';
 
 // BootSplash is optional native module
@@ -128,6 +128,12 @@ export default function SplashScreen({ navigation }: Props) {
         dispatch(preferencesActions.simpleModeHydrated(storedSimpleMode));
 
         if (!onboardingCompleted) {
+          // TEMP dev bypass: jump straight to Login so the Google confirm-sheet
+          // flow can be tested without tapping through the carousel.
+          if (TEMP_SKIP_ONBOARDING) {
+            navigation.replace('Login');
+            return;
+          }
           navigation.replace('Onboarding');
           return;
         }
