@@ -108,6 +108,7 @@ export default function SplashScreen({ navigation }: Props) {
 
       try {
         const onboardingCompleted = await getOnboardingCompleted();
+        const tokens = await getStoredTokens();
         const storedLanguage = await getStoredLanguage();
         const storedSimpleMode = await getStoredSimpleMode();
 
@@ -127,7 +128,7 @@ export default function SplashScreen({ navigation }: Props) {
 
         dispatch(preferencesActions.simpleModeHydrated(storedSimpleMode));
 
-        if (!onboardingCompleted) {
+        if (!onboardingCompleted && !tokens.accessToken) {
           // TEMP dev bypass: jump straight to Login so the Google confirm-sheet
           // flow can be tested without tapping through the carousel.
           if (TEMP_SKIP_ONBOARDING) {
@@ -137,8 +138,6 @@ export default function SplashScreen({ navigation }: Props) {
           navigation.replace('Onboarding');
           return;
         }
-
-        const tokens = await getStoredTokens();
 
         if (!tokens.accessToken) {
           navigation.replace('Login');

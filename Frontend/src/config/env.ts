@@ -4,11 +4,10 @@ import { logs } from '../services/logs';
 // deployed backend use the same JWT environment as login and signup.
 const LOCAL_API_BASE_URL = 'http://localhost:5000';
 const PRODUCTION_API_BASE_URL = 'https://api.grahnetra.com';
-// This debug build is for local-device testing with `adb reverse tcp:5000 tcp:5000`.
-// Set it back to false for a production-API build and deploy the backend fix first.
-const USE_LOCAL_BACKEND = true;
-const isDebugBuild = (typeof __DEV__ !== 'undefined' && __DEV__) || USE_LOCAL_BACKEND;
-const useLocalBackend = USE_LOCAL_BACKEND;
+// Set true only for intentional local-device testing with adb reverse.
+const USE_LOCAL_BACKEND = false;
+const isDebugBuild = typeof __DEV__ !== 'undefined' && __DEV__;
+const useLocalBackend = isDebugBuild && USE_LOCAL_BACKEND;
 
 function normalizeApiBaseUrl(url: string) {
   const trimmedUrl = url.trim().replace(/\/+$/, '');
