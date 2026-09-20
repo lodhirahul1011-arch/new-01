@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
     phoneVerified: { type: Boolean, default: undefined },
     googleSub: { type: String, trim: true },
     dateOfBirth: { type: String, trim: true, default: '' }, // YYYY-MM-DD
-    gender: { type: String, trim: true, default: '' },
+    gender: { type: String, trim: true, enum: ['', 'Male', 'Female', 'Prefer not to say'], default: '' },
 
     isVerified: { type: Boolean, default: false },
     verifiedAt: { type: Date },
