@@ -270,6 +270,13 @@ export default function Login({ navigation, route }: Props) {
   const dispatch = useAppDispatch();
   const [googleBusy, setGoogleBusy] = useState(false);
 
+  // Google sign-in runs in two steps so nothing happens silently: step 1
+  // only PICKS the Google account (no token exchange, no backend call),
+  // then an in-app confirm sheet — the mirror of Google's web "You're
+  // signing back in to …" page, which the native SDK never shows — asks
+  // Continue/Cancel. Only Continue runs step 2, the real sign-in + login.
+  const [googleConfirm, setGoogleConfirm] = useState<{ idToken: string; name: string; email: string; photo: string } | null>(null);
+
   const [heroIndex, setHeroIndex] = useState(0);
   const heroIndexRef = useRef(0);
   const heroScrollRef = useRef<ScrollView>(null);
@@ -425,115 +432,74 @@ export default function Login({ navigation, route }: Props) {
   // route below depends on the *account shape*, not the isNewUser flag: an
   // account without a phone number still owes the phone-verification leg,
   // no matter how it was created.
-  const onGoogleSignIn = async () => {
+  // STEP 1 — pick the account only. Nothing is signed in yet: the idToken is
+  // parked in memory and an in-app confirm sheet — the mirror of Google's
+  // web "You're signing back in to …" page, which the native SDK never
+  // shows — asks Continue/Cancel before any login happens.
+  const startGoogleSignIn = async () => {
     if (googleBusy) return;
     setError(undefined);
     setGoogleBusy(true);
-    let idToken = '';
-    let gUser = { name: '', email: '', photo: '', birthday: '' };
+    try {
+      ensureGoogleSignInConfigured();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      // Clear Google's cached choice so the account picker shows on EVERY
+      // sign-in (this is what made the old flow feel silent).
+      await GoogleSignin.signOut().catch(() => undefined);
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response) || !response.data?.idToken) {
+        return; // user closed the Google sheet — nothing to confirm
+      }
+      setGoogleConfirm({
+        idToken: response.data.idToken,
+        name: response.data.user?.name || '',
+        email: response.data.user?.email || '',
+        photo: response.data.user?.photo || '',
+      });
+    } catch (err: any) {
+      if (isErrorWithCode(err)) {
+        if (err.code === statusCodes.SIGN_IN_CANCELLED || err.code === statusCodes.IN_PROGRESS) {
+          return; // user-driven or transient — not an error worth a banner
+        }
+        if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+          setError('Google Play Services is not available on this device.');
+          return;
+        }
+        // Raw Play Core codes surface as plain numbers (most notably 10 =
+        // DEVELOPER_ERROR, i.e. this app's SHA-1/package isn't registered in
+        // Firebase for the configured web client id). Show the code instead
+        // of a blank failure so the cause is never silent.
+        logs.error('[auth] google native sign-in failed', { code: String(err.code) });
+        const rawCode = Number(err.code);
+        setError(
+          rawCode === 10 || rawCode === 12500
+            ? 'Google sign-in is not configured for this build (SHA-1 mismatch). Contact support.'
+            : `Google sign-in failed (code ${String(err.code)}). Please try again.`,
+        );
+        return;
+      }
+      logs.error('[auth] google sign-in failed', { message: String(err?.message ?? err) });
+      setError(err?.data?.message || err?.message || 'Google sign-in failed. Please try again.');
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
+  // STEP 2 — Continue on the confirm sheet: run the real login with the
+  // token already minted for the chosen account.
+  const finishGoogleSignIn = async () => {
+    const account = googleConfirm;
+    setGoogleConfirm(null);
+    if (!account) return;
+    setError(undefined);
+    setGoogleBusy(true);
+    let idToken = account.idToken;
+    let gUser = { name: account.name, email: account.email, photo: account.photo, birthday: '' };
 
     try {
-      // Preferred path: web OAuth via Custom Tab. `prompt: 'consent
-      // select_account'` guarantees the account picker AND the "Confirm your
-      // choices" consent form (Allow/Cancel) appear on every sign-in, and the
-      // birthday scope lets Google return the DOB it knows — which the native
-      // GoogleSignin flow can't offer (it caches consent and skips both
-      // screens after the first login).
-      try {
-        // The native SDK is the supported Android flow for this button. Keep
-        // the browser path disabled: its redirect is rejected by Google for
-        // this installed-app OAuth client and shows the blocking error page.
-        throw new Error('USE_NATIVE_GOOGLE_SIGN_IN');
-        // AppAuth returns an access token, not an idToken payload we can send
-        // as-is. Decode the idToken if present; otherwise fall back to the
-        // native SDK (which still yields a fresh idToken for this account).
-        if (result.idToken) {
-          idToken = result.idToken;
-          try {
-            // Decode the JWT payload via Hermes' global atob (typed lookup
-            // keeps tsc happy without DOM lib).
-            const decodeB64 = (globalThis as any).atob as (s: string) => string;
-            const b64 = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-            const claims = JSON.parse(decodeB64(b64));
-            gUser = {
-              name: claims.name || '',
-              email: claims.email || '',
-              photo: claims.picture || '',
-              // Only present when the user allowed the birthday scope on the
-              // consent form. Google format: YYYY-MM-DD, or 0000-MM-DD when
-              // the year is hidden in their profile.
-              birthday: claims.birthday || '',
-            };
-          } catch {
-            // Keep empty profile fields; backend derives identity from the
-            // verified token's claims anyway.
-          }
-        } else {
-          // Rare: authorization code flow without idToken. Re-run the native
-          // SDK against the same account to mint one.
-          ensureGoogleSignInConfigured();
-          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-          await GoogleSignin.signOut().catch(() => undefined);
-          const nativeResponse = await GoogleSignin.signIn();
-          if (isSuccessResponse(nativeResponse) && nativeResponse.data?.idToken) {
-            idToken = nativeResponse.data.idToken;
-            gUser = {
-              name: nativeResponse.data.user?.name || '',
-              email: nativeResponse.data.user?.email || '',
-              photo: nativeResponse.data.user?.photo || '',
-              birthday: '', // native SDK never returns the birthday claim
-            };
-          }
-        }
-      } catch (webAuthError: any) {
-        // User cancelled the web consent (or Custom Tab failed) — treat a
-        // cancellation as a silent bail-out, anything else falls back to the
-        // native picker so sign-in still works offline/degraded.
-        const msg = String(webAuthError?.message || webAuthError || '');
-        if (/cancel|dismissed/i.test(msg)) {
-          return;
-        }
-        // TEMP DEBUG: native fallback disabled on purpose so the exact
-        // AppAuth failure surfaces on the login screen instead of being
-        // masked by a silent native sign-in. Restore the fallback once the
-        // consent flow is confirmed working.
-        logs.info('[auth] web OAuth unavailable; using native Google Sign-In', { message: msg });
-        ensureGoogleSignInConfigured();
-        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-        await GoogleSignin.signOut().catch(() => undefined);
-        const response = await GoogleSignin.signIn();
-        if (!isSuccessResponse(response) || !response.data?.idToken) {
-          return;
-        }
-        idToken = response.data.idToken;
-        gUser = {
-          name: response.data.user?.name || '',
-          email: response.data.user?.email || '',
-          photo: response.data.user?.photo || '',
-          birthday: '',
-        };
-
-        /* TEMP DEBUG: native fallback removed so the exact AppAuth failure
-           is visible on screen instead of being masked by a silent native
-           sign-in. Restore this block (behind the same catch) once the
-           consent flow is confirmed working end to end.
-        ensureGoogleSignInConfigured();
-        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-        await GoogleSignin.signOut().catch(() => undefined);
-        const response = await GoogleSignin.signIn();
-        if (!isSuccessResponse(response) || !response.data?.idToken) {
-          return; // user closed the Google sheet — nothing to report
-        }
-        idToken = response.data.idToken;
-        gUser = {
-          name: response.data.user?.name || '',
-          email: response.data.user?.email || '',
-          photo: response.data.user?.photo || '',
-          birthday: '', // native SDK never returns the birthday claim
-        };
-        */
-      }
-
+      // The idToken was already minted by the account-picker step for the
+      // exact account the user chose and confirmed on the sheet — send it to
+      // the backend, which verifies it against GOOGLE_WEB_CLIENT_ID.
       if (!idToken) {
         return;
       }
@@ -839,7 +805,7 @@ export default function Login({ navigation, route }: Props) {
         <View style={[styles.socialRow, { marginTop: s(18), gap: s(11) }]}>
           <Pressable
             style={[styles.socialBtn, { width: s(35), height: s(35), borderRadius: s(17.5), backgroundColor: palette.socialBtnBg }]}
-            onPress={onGoogleSignIn}
+            onPress={startGoogleSignIn}
             disabled={googleBusy}
           >
             <Image
@@ -908,6 +874,62 @@ export default function Login({ navigation, route }: Props) {
         </>
         )}
       </View>
+
+      {!!googleConfirm && (
+        // In-app mirror of Google's web "You're signing back in to …" sheet:
+        // the native SDK signs in silently, so this is the explicit
+        // Continue/Cancel gate before ANY login happens. Nothing has been
+        // sent to the backend yet — Cancel just discards the picked token.
+        <View style={styles.googleConfirmBackdrop}>
+          <View
+            style={[
+              styles.googleConfirmCard,
+              { backgroundColor: palette.background, borderColor: palette.inputBorder },
+            ]}
+          >
+            <View style={styles.googleConfirmBrandRow}>
+              <Image
+                source={require('../../../assets/icons/common/social-google.png')}
+                style={{ width: s(20), height: s(20) }}
+                resizeMode="contain"
+              />
+              <Text style={[styles.googleConfirmBrand, { fontSize: s(13), color: palette.title }]}>
+                Sign in with Google
+              </Text>
+            </View>
+
+            <Text style={[styles.googleConfirmTitle, { fontSize: s(18), lineHeight: s(26), color: palette.title }]}>
+              {googleConfirm.name ? `You're signing in to Dvaari as ${googleConfirm.name}` : "You're signing in to Dvaari"}
+            </Text>
+            <Text style={[styles.googleConfirmEmail, { fontSize: s(13), color: palette.rememberText }]}>
+              {googleConfirm.email}
+            </Text>
+
+            <View style={styles.googleConfirmActions}>
+              <Pressable
+                style={[styles.googleConfirmBtn, styles.googleConfirmBtnSecondary, { borderColor: palette.inputBorder }]}
+                onPress={() => setGoogleConfirm(null)}
+                disabled={googleBusy}
+              >
+                <Text style={[styles.googleConfirmBtnText, { fontSize: s(14), color: palette.title }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.googleConfirmBtn, styles.googleConfirmBtnPrimary]}
+                onPress={finishGoogleSignIn}
+                disabled={googleBusy}
+              >
+                {googleBusy ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.googleConfirmBtnText, styles.googleConfirmBtnTextPrimary, { fontSize: s(14) }]}>
+                    Continue
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
 
       {isLoading && (
         // A full-screen sibling of the card, so it stays centred on the
@@ -1106,6 +1128,85 @@ function createStyles(scale: number) {
     socialRow: {
       flexDirection: 'row',
       justifyContent: 'center',
+    },
+
+    // In-app Google confirm sheet (mirror of Google's web confirm page —
+    // the native SDK signs in silently, so the explicit gate lives here).
+    googleConfirmBackdrop: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: s(24),
+    },
+
+    googleConfirmCard: {
+      width: '100%',
+      maxWidth: s(340),
+      borderRadius: s(16),
+      borderWidth: 1,
+      paddingTop: s(18),
+      paddingHorizontal: s(18),
+      paddingBottom: s(18),
+      gap: s(10),
+    },
+
+    googleConfirmBrandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: s(8),
+    },
+
+    googleConfirmBrand: {
+      fontFamily: 'Satoshi-Medium',
+      color: 'rgba(0,0,0,0.7)',
+    },
+
+    googleConfirmTitle: {
+      fontFamily: 'Satoshi-Bold',
+      color: '#1E1E1E',
+    },
+
+    googleConfirmEmail: {
+      fontFamily: 'Satoshi-Medium',
+      color: 'rgba(0,0,0,0.6)',
+    },
+
+    googleConfirmActions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: s(10),
+      marginTop: s(6),
+    },
+
+    googleConfirmBtn: {
+      minHeight: s(42),
+      borderRadius: s(999),
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: s(20),
+    },
+
+    googleConfirmBtnSecondary: {
+      borderWidth: 1,
+      backgroundColor: 'transparent',
+    },
+
+    googleConfirmBtnPrimary: {
+      backgroundColor: '#2362EB',
+    },
+
+    googleConfirmBtnText: {
+      fontFamily: 'Satoshi-Medium',
+      color: '#1E1E1E',
+    },
+
+    googleConfirmBtnTextPrimary: {
+      color: '#FFFFFF',
     },
 
     socialBtn: {

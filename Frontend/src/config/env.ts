@@ -2,7 +2,7 @@ import { logs } from '../services/logs';
 
 // For debug builds, Android devices should call the local backend through
 // `adb reverse tcp:5000 tcp:5000`, so use localhost rather than a stale LAN IP.
-const LOCAL_API_BASE_URL = 'http://192.168.1.4:5000'; // PC WiFi IP - change back to localhost if using emulator
+const LOCAL_API_BASE_URL = 'http://localhost:5000'; // Use with adb reverse tcp:5000 tcp:5000 for a connected Android device
 const PRODUCTION_API_BASE_URL = 'https://api.grahnetra.com';
 // Final Android builds must not depend on the developer laptop's LAN IP.
 // Keep the local URL as a fallback for development, but use the deployed API
@@ -63,7 +63,12 @@ if (DEV_PREVIEW_ADD_MEMBER_FLOW) {
 // permission dialogs, Link a device, the QR scanner, Linked devices, the
 // "Do you have a Dvaari Box?" question, then box linking or Home — so those
 // screens can be demoed without pairable hardware.
-const DEMO_ONBOARDING_WALKTHROUGH_IN_DEV = true;
+const DEMO_ONBOARDING_WALKTHROUGH_IN_DEV = false; // TEMP: disabled for Google-flow testing
+
+// TEMPORARY: skips the onboarding carousel in dev so the Google confirm-sheet
+// flow can be tested without tapping through 4 slides (revert after testing).
+const TEMP_SKIP_ONBOARDING_IN_DEV = true;
+export const TEMP_SKIP_ONBOARDING = isDebugBuild && TEMP_SKIP_ONBOARDING_IN_DEV;
 export const DEMO_ONBOARDING_WALKTHROUGH =
   isDebugBuild && DEMO_ONBOARDING_WALKTHROUGH_IN_DEV;
 
