@@ -32,7 +32,6 @@
     "react": "19.2.3",
     "react-i18next": "^17.0.4",
     "react-native": "0.84.1",
-    "react-native-app-auth": "^8.4.1",
     "react-native-image-picker": "^8.2.1",
     "react-native-localize": "^3.7.0",
     "react-native-permissions": "^5.5.1",
@@ -42,7 +41,8 @@
     "react-native-vision-camera": "^4.7.3",
     "react-native-webrtc": "^124.0.7",
     "react-native-worklets-core": "^1.6.3",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "rn-qr-generator": "^2.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

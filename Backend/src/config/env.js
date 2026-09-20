@@ -113,7 +113,6 @@ const env = {
   // Android OAuth client (used by the AppAuth Custom-Tab flow). Tokens from
   // that flow carry this audience instead of the web one, so the verifier
   // accepts either.
-  GOOGLE_ANDROID_CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID || '',
 
   OTP_LENGTH: Number(process.env.OTP_LENGTH || 4),
   OTP_TTL_SECONDS: Number(process.env.OTP_TTL_SECONDS || 300),

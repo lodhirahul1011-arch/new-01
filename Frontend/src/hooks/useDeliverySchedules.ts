@@ -94,7 +94,7 @@ function retainSourceBackedDeliveries(
   const removedCount = schedules.length - retained.length;
 
   if (removedCount > 0) {
-    logs.error('[delivery-schedules] untraceable delivery records suppressed', {
+    logs.info('[delivery-schedules] untraceable delivery records suppressed', {
       collection,
       removedCount,
     });

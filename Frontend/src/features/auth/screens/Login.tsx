@@ -28,7 +28,6 @@ import {
   isSuccessResponse,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
-import { prefetchConfiguration } from 'react-native-app-auth';
 
 import type { RootStackParamList } from '../../../navigation/RootNavigator';
 import {
@@ -122,46 +121,16 @@ function ensureGoogleSignInConfigured() {
 // account picker — matching the old app's behaviour exactly.
 // AppAuth (Custom Tab) flow uses the ANDROID OAuth client from Google
 // Cloud — not the Web client. Its redirect scheme is fixed by Google:
-// com.googleusercontent.apps.<android-client-id-prefix>:/oauth2redirect
 // (AppAuth-Android's README-Google pattern). Using the web client here
 // made Google reject the redirect and the consent screen never appeared.
-const GOOGLE_ANDROID_CLIENT_ID =
-  '822625137979-chsg1n5is46jueebjhakdvvke1b6cie7.apps.googleusercontent.com';
-const GOOGLE_ANDROID_REDIRECT_SCHEME =
-  'com.googleusercontent.apps.822625137979-chsg1n5is46jueebjhakdvvke1b6cie7';
-
-const GOOGLE_AUTH_CONFIG = {
-  issuer: 'https://accounts.google.com',
-  clientId: GOOGLE_ANDROID_CLIENT_ID,
-  redirectUrl: `${GOOGLE_ANDROID_REDIRECT_SCHEME}:/oauth2redirect`,
-  scopes: [
-    'openid',
-    'email',
-    'profile',
-    'https://www.googleapis.com/auth/user.birthday.read',
-  ],
   // Provider-specific query params go through additionalParameters — a
   // top-level `prompt` key is ignored by react-native-app-auth. The library
   // types only allow a single prompt value, but Google accepts the
   // space-separated pair, so the whole config is cast loosely below.
-  additionalParameters: {
-    prompt: 'consent select_account',
-  },
-  usePKCE: true,
-  serviceConfiguration: {
-    authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-    tokenEndpoint: 'https://oauth2.googleapis.com/token',
-    revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
-  },
-};
 
 // Warm the auth session in advance so the Custom Tab opens instantly. The
 // `as any` sidesteps the library's narrow prompt-type (it permits one value;
 // Google accepts the space-separated 'consent select_account' pair).
-prefetchConfiguration({
-  warmAndPrefetchChrome: true,
-  ...GOOGLE_AUTH_CONFIG,
-} as any).catch(() => undefined);
 
 const INDIA_PHONE_REGEX = /^[6-9]\d{9}$/;
 const GENERIC_PHONE_REGEX = /^\d{6,14}$/;
@@ -436,6 +405,73 @@ export default function Login({ navigation, route }: Props) {
   // parked in memory and an in-app confirm sheet — the mirror of Google's
   // web "You're signing back in to …" page, which the native SDK never
   // shows — asks Continue/Cancel before any login happens.
+  // Native Google account picker: only profile, email, and an ID token are
+  // requested. DOB and gender are collected in PersonalDetails instead.
+  const handleGoogleSignIn = async () => {
+    if (googleBusy) return;
+    setError(undefined);
+    setGoogleBusy(true);
+    try {
+      ensureGoogleSignInConfigured();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response)) return;
+
+      const idToken = response.data?.idToken;
+      const googleName = response.data?.user?.name || '';
+      const googleEmail = response.data?.user?.email || '';
+      const googlePhoto = response.data?.user?.photo || '';
+      if (!idToken || !googleEmail) {
+        setError('Google did not return a valid account.');
+        return;
+      }
+
+      const auth = await googleSignIn({ idToken }).unwrap();
+      await setTokens(auth.accessToken, auth.refreshToken);
+      await setCurrentUserId(getAuthUserId(auth.user));
+      dispatch(authApi.util.resetApiState());
+      dispatch(authActions.signedIn({ accessToken: auth.accessToken, refreshToken: auth.refreshToken, user: auth.user }));
+      syncPushTokenWithAccessToken(auth.accessToken, 'google_signed_in').catch(error =>
+        logs.error('[notifications] google login token sync failed', String(error)),
+      );
+
+      const needsPhone = !auth.user?.phone || auth.user?.phoneVerified === false;
+      const needsProfile = !auth.user?.name || !auth.user?.dateOfBirth || !auth.user?.gender;
+      if (!needsPhone && !needsProfile) {
+        const linked = await triggerLinkedDevicesSummary().unwrap();
+        const total = linked?.data?.summary?.total ?? 0;
+        navigation.reset({ index: 0, routes: [{ name: total > 0 ? 'MainTabs' : 'RequestPermissions' }] });
+      } else if (needsPhone) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'EnterPhoneNumber', params: { googleName, googleEmail, googlePhoto, googleSignup: true } }],
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'PersonalDetails', params: { next: 'DeviceSetup', prefillName: googleName, prefillPhoto: googlePhoto } }],
+        });
+      }
+    } catch (err: any) {
+      if (isErrorWithCode(err)) {
+        if (err.code === statusCodes.SIGN_IN_CANCELLED || err.code === statusCodes.IN_PROGRESS) return;
+        if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+          setError('Google Play Services is not available on this device.');
+          return;
+        }
+        const rawCode = Number(err.code);
+        setError(rawCode === 10 || rawCode === 12500
+          ? 'Google sign-in is not configured for this build (SHA-1 mismatch). Contact support.'
+          : `Google sign-in failed (code ${String(err.code)}). Please try again.`);
+      } else {
+        logs.error('[auth] google sign-in failed', { message: String(err?.message ?? err) });
+        setError(err?.data?.message || err?.message || 'Google sign-in failed. Please try again.');
+      }
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
   const startGoogleSignIn = async () => {
     if (googleBusy) return;
     setError(undefined);

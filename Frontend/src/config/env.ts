@@ -1,14 +1,14 @@
 import { logs } from '../services/logs';
 
-// For debug builds, Android devices should call the local backend through
-// `adb reverse tcp:5000 tcp:5000`, so use localhost rather than a stale LAN IP.
-const LOCAL_API_BASE_URL = 'http://localhost:5000'; // Use with adb reverse tcp:5000 tcp:5000 for a connected Android device
+// Production is the default for every build so QR codes provisioned by the
+// deployed backend use the same JWT environment as login and signup.
+const LOCAL_API_BASE_URL = 'http://localhost:5000';
 const PRODUCTION_API_BASE_URL = 'https://api.grahnetra.com';
-// Final Android builds must not depend on the developer laptop's LAN IP.
-// Keep the local URL as a fallback for development, but use the deployed API
-// as the primary endpoint so Google OAuth can complete from any network.
+// Set this to true only when intentionally testing the local backend with
+// `adb reverse tcp:5000 tcp:5000`. Do not mix local tokens with production QR codes.
 const USE_LOCAL_BACKEND = false;
 const isDebugBuild = (typeof __DEV__ !== 'undefined' && __DEV__) || USE_LOCAL_BACKEND;
+const useLocalBackend = USE_LOCAL_BACKEND;
 
 function normalizeApiBaseUrl(url: string) {
   const trimmedUrl = url.trim().replace(/\/+$/, '');
@@ -24,18 +24,17 @@ function normalizeApiBaseUrl(url: string) {
 
   logs.info('[env] API base URL configured', {
     apiBaseUrl: trimmedUrl,
-    mode: isDebugBuild ? 'local' : 'production',
+    mode: useLocalBackend ? 'local' : 'production',
   });
   return trimmedUrl;
 }
 
 export const API_BASE_URL = normalizeApiBaseUrl(
-  isDebugBuild ? LOCAL_API_BASE_URL : PRODUCTION_API_BASE_URL,
+  useLocalBackend ? LOCAL_API_BASE_URL : PRODUCTION_API_BASE_URL,
 );
-export const API_BASE_URL_FALLBACKS = [
-  API_BASE_URL,
-  normalizeApiBaseUrl(isDebugBuild ? PRODUCTION_API_BASE_URL : LOCAL_API_BASE_URL),
-];
+// Never retry an authenticated request against another backend environment:
+// JWTs issued by localhost are not valid on the deployed API and vice versa.
+export const API_BASE_URL_FALLBACKS = [API_BASE_URL];
 
 // Dev-only escape hatch for the "you must link a device before using the app"
 // gate, so screens behind it can be worked on without a pairable device on

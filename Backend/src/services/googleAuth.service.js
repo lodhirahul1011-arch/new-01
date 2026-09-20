@@ -69,9 +69,7 @@ async function verifyGoogleIdToken(idToken, audience) {
   // and the Android client (AppAuth Custom-Tab flow idTokens). Each flow
   // mints tokens with its own `aud`, so a single-audience check rejects
   // valid users from the other flow.
-  const allowedAudiences = [audience, process.env.GOOGLE_ANDROID_CLIENT_ID]
-    .map(a => String(a || '').trim())
-    .filter(Boolean);
+  const allowedAudiences = [String(audience || '').trim()].filter(Boolean);
   if (!token) {
     const err = new Error('Google ID token is required');
     err.code = 'GOOGLE_ID_TOKEN_REQUIRED';
