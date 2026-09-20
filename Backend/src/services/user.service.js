@@ -140,22 +140,33 @@ async function saveFcmToken(userId, { token, platform }) {
     { $pull: { fcmTokens: { token: normalizedToken } } },
   );
 
-  const existingIndex = (user.fcmTokens || []).findIndex((t) => t.token === normalizedToken);
-  if (existingIndex >= 0) {
-    user.fcmTokens[existingIndex].platform = platform || user.fcmTokens[existingIndex].platform;
-    user.fcmTokens[existingIndex].addedAt = new Date();
-  } else {
-    user.fcmTokens.push({ token: normalizedToken, platform: platform || 'unknown', addedAt: new Date() });
-  }
-
-  await user.save();
+  // Update only the push-token array. Calling user.save() here validates every
+  // profile field, so legacy users with an empty optional gender value could
+  // fail token sync even though the token payload itself was valid.
+  await User.updateOne(
+    { _id: userId },
+    { $pull: { fcmTokens: { token: normalizedToken } } },
+  );
+  await User.updateOne(
+    { _id: userId },
+    {
+      $push: {
+        fcmTokens: {
+          token: normalizedToken,
+          platform: platform || 'unknown',
+          addedAt: new Date(),
+        },
+      },
+    },
+  );
+  const updatedUser = await User.findOne(activeUserFilter({ _id: userId })).select('fcmTokens');
   safeLog('[PUSH]', 'fcm_token_saved', {
-    userId: String(user._id),
+    userId: String(userId),
     platform: platform || 'unknown',
     tokenPreview: normalizedToken.slice(0, 12),
-    tokenCount: user.fcmTokens.length,
+    tokenCount: updatedUser?.fcmTokens?.length || 0,
   });
-  return { count: user.fcmTokens.length };
+  return { count: updatedUser?.fcmTokens?.length || 0 };
 }
 
 async function removeFcmToken(userId, { token } = {}) {
