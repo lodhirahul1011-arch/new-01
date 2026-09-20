@@ -4,9 +4,9 @@ import { logs } from '../services/logs';
 // deployed backend use the same JWT environment as login and signup.
 const LOCAL_API_BASE_URL = 'http://localhost:5000';
 const PRODUCTION_API_BASE_URL = 'https://api.grahnetra.com';
-// Set this to true only when intentionally testing the local backend with
-// `adb reverse tcp:5000 tcp:5000`. Do not mix local tokens with production QR codes.
-const USE_LOCAL_BACKEND = false;
+// This debug build is for local-device testing with `adb reverse tcp:5000 tcp:5000`.
+// Set it back to false for a production-API build and deploy the backend fix first.
+const USE_LOCAL_BACKEND = true;
 const isDebugBuild = (typeof __DEV__ !== 'undefined' && __DEV__) || USE_LOCAL_BACKEND;
 const useLocalBackend = USE_LOCAL_BACKEND;
 
