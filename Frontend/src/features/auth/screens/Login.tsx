@@ -54,7 +54,6 @@ import CloseRoundFillIcon from '../../../assets/icons/common/close-round-fill.sv
 import CloseRoundFillWhiteIcon from '../../../assets/icons/common/close-round-fill-white.svg';
 import { useUiScale } from '../../../theme/responsive';
 import {
-  CONTENT_POLICY_URL,
   PRIVACY_POLICY_URL,
   TERMS_CONDITIONS_URL,
 } from '../../../config/env';
@@ -868,7 +867,7 @@ export default function Login({ navigation, route }: Props) {
           style={[
             styles.legalText,
             // No fixed width here — Figma's own 195px box somehow fits
-            // "Terms of Services Privacy Policy Content Policy" on one
+            // "Terms of Services Privacy Policy" on one
             // line in Figma's renderer, but the same width wraps it
             // mid-phrase on-device (font metrics differ). Letting it use
             // the full available width (bounded by the card's own
@@ -891,14 +890,6 @@ export default function Login({ navigation, route }: Props) {
             onPress={() => openLegalDocument('privacy_policy', PRIVACY_POLICY_URL)}
           >
             Privacy Policy
-          </Text>
-          {'  '}
-          <Text
-            style={styles.legalLink}
-            accessibilityRole="link"
-            onPress={() => openLegalDocument('content_policy', CONTENT_POLICY_URL)}
-          >
-            Content Policy
           </Text>
         </Text>
         </>
