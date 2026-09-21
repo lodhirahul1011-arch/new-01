@@ -1,0 +1,213 @@
+{
+  "info": {
+    "name": "Dvaari Mobile Delivery Enhancements",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "dvaari-mobile-delivery-enhancements"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "deliveryId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Mobile Delivery Dashboard",
+      "item": [
+        {
+          "name": "Get Delivery Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/deliveries/dashboard?status=all&limit=20"
+          }
+        },
+        {
+          "name": "Get Upcoming Deliveries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/deliveries/upcoming?status=upcoming&limit=20"
+          }
+        },
+        {
+          "name": "Get Delivery Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/deliveries/{{deliveryId}}"
+          }
+        },
+        {
+          "name": "Get Rejection Reasons",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/deliveries/rejection-reasons"
+          }
+        },
+        {
+          "name": "Approve Delivery via App",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verificationMethod\": \"app\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/deliveries/{{deliveryId}}/approve"
+          }
+        },
+        {
+          "name": "Reject Delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"wrong_item\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/deliveries/{{deliveryId}}/reject"
+          }
+        },
+        {
+          "name": "Rate Delivered Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"score\": 5,\n  \"comment\": \"Smooth handoff\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/deliveries/{{deliveryId}}/rating"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Monthly Reports",
+      "item": [
+        {
+          "name": "Get Monthly Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/analytics/monthly-report?month=2025-11"
+          }
+        },
+        {
+          "name": "Get Monthly Report (Business Filter)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/analytics/monthly-report?month=2025-11&category=business"
+          }
+        },
+        {
+          "name": "Export PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/analytics/export/pdf?month=2025-11"
+          }
+        },
+        {
+          "name": "Export Excel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/analytics/export/excel?month=2025-11"
+          }
+        },
+        {
+          "name": "WhatsApp Share Payload",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/analytics/share/whatsapp?month=2025-11"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+
+> backend@1.0.0 dev
+> nodemon --watch src --watch server.js --watch .env server.js
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): src\**\* server.js .env[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node server.js`[39m
+[2026-09-20T06:16:38.783Z] [INFO] [ENV] Play Store review access enabled { email: 'demo@test.com', phoneConfigured: true, otpConfigured: true }
+[2026-09-20T06:16:38.785Z] [INFO] [ENV] non-production configuration loaded { nodeEnv: 'review' }
+[2026-09-20T06:16:39.517Z] [INFO] [APP][BOOT] ensured upload directories
+[2026-09-20T06:16:39.519Z] [INFO] [APP][BOOT] CORS configured { mode: 'allowlist', originCount: 2 }
+[2026-09-20T06:16:40.071Z] [INFO] [DB] MongoDB connected
+[2026-09-20T06:16:40.072Z] [INFO] [DevicePresenceMonitor] started { intervalMs: 10000, offlineThresholdMs: 90000 }
+[2026-09-20T06:16:40.079Z] [ERROR] [SERVER][BOOT] port already in use { port: 5000 }
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
