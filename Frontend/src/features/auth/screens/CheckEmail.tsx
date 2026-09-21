@@ -68,6 +68,7 @@ export default function CheckEmail({ navigation, route }: Props) {
   const destination = route.params?.destination ?? '';
   const otpSessionId = route.params?.otpSessionId;
   const debugCode = route.params?.debugCode;
+  const linking = route.params?.linking;
 
   const goToCodeEntry = () => {
     navigation.replace('Otp', {
@@ -76,6 +77,7 @@ export default function CheckEmail({ navigation, route }: Props) {
       flow: 'login',
       otpSessionId,
       debugCode,
+      linking,
     });
   };
 

@@ -64,7 +64,7 @@ const THEME = {
   },
 };
 
-export default function ContinueWithEmail({ navigation }: Props) {
+export default function ContinueWithEmail({ navigation, route }: Props) {
   const styles = useStyles();
   const scale = useUiScale(CANVAS_W);
   const s = (n: number) => n * scale;
@@ -77,7 +77,8 @@ export default function ContinueWithEmail({ navigation }: Props) {
   const [requestLinkOtp, { isLoading: linkLoading }] = useRequestLinkOtpMutation();
   // Signed in already means this is onboardings second identifier, which must
   // attach to the current account rather than resolve/create one of its own.
-  const isLinking = Boolean(useAppSelector(state => state.auth.accessToken));
+  const hasAccessToken = Boolean(useAppSelector(state => state.auth.accessToken));
+  const isLinking = route.params?.linking ?? hasAccessToken;
   const sending = isLoading || linkLoading;
 
   const trimmedEmail = useMemo(() => email.trim(), [email]);
@@ -109,6 +110,7 @@ export default function ContinueWithEmail({ navigation }: Props) {
         destination: trimmedEmail,
         otpSessionId: response.otpSessionId,
         debugCode: response.debugCode,
+        linking: isLinking,
       });
     } catch (err: any) {
       const apiMessage =
