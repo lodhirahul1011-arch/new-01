@@ -77,4 +77,3 @@ export const PRIVACY_POLICY_URL = 'https://grahnetra.com/privacy-policy';
 export const TERMS_CONDITIONS_URL = 'https://grahnetra.com/terms-and-conditions';
 
 export const GOOGLE_WEB_CLIENT_ID = '822625137979-dpgm251kc70m3j3lh5gbkgk45foe9uob.apps.googleusercontent.com';
-export const CONTENT_POLICY_URL = 'https://grahnetra.com/content-policy';

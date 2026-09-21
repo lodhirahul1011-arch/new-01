@@ -2,7 +2,6 @@ import React from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
-  CONTENT_POLICY_URL,
   PRIVACY_POLICY_URL,
   TERMS_CONDITIONS_URL,
 } from '../../../config/env';
@@ -64,13 +63,6 @@ export default function LegalAgreementCheckbox({
             onPress={() => openLegalUrl('terms_conditions', TERMS_CONDITIONS_URL)}
           >
             <Text style={styles.link}>Terms & Conditions</Text>
-          </Pressable>
-          <Text style={styles.copy}> and </Text>
-          <Pressable
-            hitSlop={8}
-            onPress={() => openLegalUrl('content_policy', CONTENT_POLICY_URL)}
-          >
-            <Text style={styles.link}>Content Policy</Text>
           </Pressable>
         </View>
       </View>
