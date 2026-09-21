@@ -37,8 +37,7 @@ import { useUiScale } from '../../../theme/responsive';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EnterPhoneNumber'>;
 
-const INDIA_PHONE_REGEX = /^[6-9]\d{9}$/;
-const GENERIC_PHONE_REGEX = /^\d{6,14}$/;
+const TEN_DIGIT_PHONE_REGEX = /^\d{10}$/;
 
 // Every number below is copied 1:1 from the Figma frame (fileKey
 // 0ZAjL8CnVgprbKaBMIjUqJ, "Enter Phone number when Email" node 414:5219), a
@@ -106,20 +105,19 @@ export default function EnterPhoneNumber({ navigation, route }: Props) {
   }, [route.params?.selectedCountryIso2]);
 
   const isValid = useMemo(() => {
-    const regex = country.iso2 === 'IN' ? INDIA_PHONE_REGEX : GENERIC_PHONE_REGEX;
-    return regex.test(phone);
-  }, [phone, country]);
+    return TEN_DIGIT_PHONE_REGEX.test(phone);
+  }, [phone]);
 
   const onChangePhone = (text: string) => {
     setError(undefined);
-    setPhone(text.replace(/\D/g, '').slice(0, 14));
+    setPhone(text.replace(/\D/g, '').slice(0, 10));
   };
 
   const onSendOtp = async () => {
     setError(undefined);
 
     if (!isValid || sending) {
-      setError('Enter a valid mobile number.');
+      setError('Enter a valid 10 digit mobile number.');
       return;
     }
 
@@ -141,7 +139,7 @@ export default function EnterPhoneNumber({ navigation, route }: Props) {
         flow: 'login',
         otpSessionId: response.otpSessionId,
         debugCode: response.debugCode,
-        // A Google sign-up lands here after Personal Details — carry the
+        // A Google sign-up lands here before Personal Details — carry the
         // identity forward. Otp only needs these if it has to route into
         // PersonalDetails (nameless-account fallback); the normal link-verify
         // path completes without showing the details page again.
@@ -256,7 +254,7 @@ export default function EnterPhoneNumber({ navigation, route }: Props) {
               placeholder="Enter Phone Number"
               placeholderTextColor={palette.placeholder}
               keyboardType="number-pad"
-              maxLength={14}
+              maxLength={10}
               style={[styles.phoneInput, { fontSize: s(16), color: palette.phoneText }]}
             />
             {!!phone && (
