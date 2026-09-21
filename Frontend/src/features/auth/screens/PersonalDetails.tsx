@@ -55,6 +55,8 @@ const HEADER_H = 26;
 
 const DOB_REGEX = /^(\d{2})\/(\d{2})\/(\d{4})$/;
 const GENDER_OPTIONS = ['Male', 'Female', 'Prefer not to say'];
+const MIN_DOB_DATE = new Date(1900, 0, 1);
+const MAX_DOB_DATE = new Date();
 
 function isValidDob(value: string) {
   const match = value.match(DOB_REGEX);
@@ -70,6 +72,29 @@ function isValidDob(value: string) {
     date.getDate() === day &&
     date.getTime() <= Date.now()
   );
+}
+
+function getDobValidationError(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return 'Date of birth is required.';
+  const match = trimmed.match(DOB_REGEX);
+  if (!match) return 'Enter date of birth as DD/MM/YYYY.';
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  if (year < 1900) return 'Date of birth cannot be before 1900.';
+  if (year > new Date().getFullYear()) return 'Date of birth cannot be in the future.';
+  if (month < 1 || month > 12) return 'Enter a valid month.';
+
+  const date = new Date(year, month - 1, day);
+  const validCalendarDate =
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day;
+  if (!validCalendarDate) return 'Enter a valid calendar date.';
+  if (date.getTime() > Date.now()) return 'Date of birth cannot be in the future.';
+  return undefined;
 }
 
 function normalizeDobInput(value: string) {
@@ -189,13 +214,7 @@ export default function PersonalDetails({ navigation, route }: Props) {
   const [otpConsentVisible, setOtpConsentVisible] = useState(false);
 
   const nameError = touched.name && name.trim().length === 0 ? 'Name is required.' : undefined;
-  const dobError = touched.dob
-    ? dob.trim().length === 0
-      ? 'Date of birth is required.'
-      : !isValidDob(dob.trim())
-        ? 'Enter a valid date as DD/MM/YYYY.'
-        : undefined
-    : undefined;
+  const dobError = touched.dob ? getDobValidationError(dob) : undefined;
   const isValid = useMemo(
     () =>
       name.trim().length > 0 &&
@@ -478,7 +497,8 @@ export default function PersonalDetails({ navigation, route }: Props) {
           value={parseDob(dob)}
           mode="date"
           display="default"
-          maximumDate={new Date()}
+          minimumDate={MIN_DOB_DATE}
+          maximumDate={MAX_DOB_DATE}
           onChange={onDobPicked}
         />
       )}
@@ -498,7 +518,8 @@ export default function PersonalDetails({ navigation, route }: Props) {
                     value={parseDob(dob)}
                     mode="date"
                     display="spinner"
-                    maximumDate={new Date()}
+                    minimumDate={MIN_DOB_DATE}
+                    maximumDate={MAX_DOB_DATE}
                     onChange={onDobPicked}
                   />
                   <Pressable style={styles.sheetCancel} onPress={() => setDobPickerVisible(false)}>

@@ -200,7 +200,18 @@ export default function Otp({ navigation, route }: Props) {
     if (verifiedFlow === 'signup') {
       navigation.reset({
         index: 0,
-        routes: [{ name: 'PersonalDetails', params: { next: 'AccountVerified', prefillName: user?.name || '' } }],
+        routes: [
+          {
+            name: 'PersonalDetails',
+            params: {
+              next: 'AccountVerified',
+              prefillName: route.params?.prefillName || user?.name || '',
+              prefillDob: route.params?.prefillDob,
+              prefillGender: route.params?.prefillGender,
+              prefillPhoto: route.params?.prefillPhoto,
+            },
+          },
+        ],
       });
       return;
     }

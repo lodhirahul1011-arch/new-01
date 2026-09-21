@@ -573,13 +573,9 @@ export default function Login({ navigation, route }: Props) {
         return `${match[3]}/${match[2]}/${match[1]}`;
       })();
 
-      // Missing-profile check decides the route, in the order onboarding
-      // collects things: DOB/gender page (PersonalDetails) -> phone leg ->
-      // permissions/home. Google ALWAYS returns a name, so checking `name`
-      // (as an earlier version did) meant brand-new Google accounts sailed
-      // past Personal Details straight to the phone screen with their DOB,
-      // gender and photo never captured.
-      const needsPhone = !auth.user?.phone;
+      // Google signup verifies mobile first, then collects any missing
+      // Personal Details with Google-provided prefills carried forward.
+      const needsPhone = !auth.user?.phone || auth.user?.phoneVerified === false;
       const needsProfile = !auth.user?.dateOfBirth || !auth.user?.gender;
 
       if (!needsPhone && !needsProfile) {
@@ -592,20 +588,18 @@ export default function Login({ navigation, route }: Props) {
           index: 0,
           routes: [{ name: total > 0 ? 'MainTabs' : 'RequestPermissions' }],
         });
-      } else if (needsProfile) {
-        // DOB/gender missing (the normal Google signup case): the details
-        // page runs first with whatever Google already gave us (name, photo,
-        // and — when the birthday scope was allowed — the DOB prefilled),
-        // then the phone leg via its next: 'EnterPhoneNumber' param.
+      } else if (needsPhone) {
+        // Phone verification comes before Personal Details in the Google
+        // signup flow.
         navigation.reset({
           index: 0,
-          routes: [{ name: 'PersonalDetails', params: { next: 'EnterPhoneNumber', prefillName: googleName, prefillPhoto: googlePhoto, prefillDob: googleDob } }],
+          routes: [{ name: 'EnterPhoneNumber', params: { googleName, googleEmail, googlePhoto, googleDob, googleSignup: true } }],
         });
       } else {
-        // Profile complete but no phone: collect + verify it now.
+        // Phone is verified, but DOB/gender are still missing.
         navigation.reset({
           index: 0,
-          routes: [{ name: 'EnterPhoneNumber', params: { googleName, googleEmail, googlePhoto } }],
+          routes: [{ name: 'PersonalDetails', params: { next: 'AccountVerified', prefillName: googleName, prefillPhoto: googlePhoto, prefillDob: googleDob } }],
         });
       }
     } catch (err: any) {
