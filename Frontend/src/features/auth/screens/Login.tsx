@@ -85,8 +85,6 @@ const HERO_AUTO_SCROLL_MS = 3000;
 
 async function openLegalDocument(label: string, url: string) {
   try {
-    const supported = await Linking.canOpenURL(url);
-    if (!supported) throw new Error('URL is not supported by this device');
     await Linking.openURL(url);
   } catch (error) {
     logs.error('[login] legal link failed', { label, url, error: String(error) });
