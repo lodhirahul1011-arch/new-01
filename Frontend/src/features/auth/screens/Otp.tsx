@@ -155,7 +155,8 @@ export default function Otp({ navigation, route }: Props) {
 
   // Signed in already means this OTP is the second identifier of onboarding,
   // not a sign-in — see onVerify.
-  const isLinking = Boolean(useAppSelector(state => state.auth.accessToken));
+  const hasAccessToken = Boolean(useAppSelector(state => state.auth.accessToken));
+  const isLinking = route.params?.linking ?? hasAccessToken;
 
   const verifying = loginLoading || signupLoading || linkLoading;
   const canSubmit = code.length === otpLength && !verifying;

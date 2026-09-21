@@ -178,7 +178,10 @@ export default function EnterPhoneNumber({ navigation, route }: Props) {
               // where it normally would.
               navigation.reset({
                 index: 1,
-                routes: [{ name: 'Login' }, { name: 'ContinueWithEmail' }],
+                routes: [
+                  { name: 'Login' },
+                  { name: 'ContinueWithEmail', params: { linking: true } },
+                ],
               })
             }
             hitSlop={8}

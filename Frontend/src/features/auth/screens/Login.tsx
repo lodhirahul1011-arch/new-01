@@ -847,7 +847,7 @@ export default function Login({ navigation, route }: Props) {
 
           <Pressable
             style={[styles.socialBtn, { width: s(35), height: s(35), borderRadius: s(17.5), backgroundColor: palette.socialBtnBg }]}
-            onPress={() => navigation.navigate('ContinueWithEmail')}
+            onPress={() => navigation.navigate('ContinueWithEmail', { linking: false })}
           >
             <EmailIcon width={s(24)} height={s(24)} />
           </Pressable>

@@ -57,7 +57,7 @@ export type RootStackParamList = {
         prefillPhone?: string;
       }
     | undefined;
-  ContinueWithEmail: undefined;
+  ContinueWithEmail: { linking?: boolean } | undefined;
   CheckEmail: { destination?: string; otpSessionId?: string; debugCode?: string; linking?: boolean } | undefined;
   PersonalDetails:
     | {
