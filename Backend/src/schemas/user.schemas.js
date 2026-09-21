@@ -7,7 +7,10 @@ const updateMeSchema = z
     phone: z.string().min(7).max(20).optional(),
     address: z.string().max(300).optional(),
     dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'dateOfBirth must be YYYY-MM-DD').optional(),
-    gender: z.enum(['Male', 'Female', 'Prefer not to say']).optional(),
+    gender: z.preprocess(
+      value => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+      z.enum(['Male', 'Female', 'Prefer not to say']).optional(),
+    ),
   })
   .strict();
 

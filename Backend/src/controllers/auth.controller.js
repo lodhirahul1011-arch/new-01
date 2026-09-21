@@ -260,10 +260,12 @@ async function verifyLoginOtp(req, res, next) {
 
       await acceptPendingInviteForRegisteredUser(user);
     } else {
-      user.lastLoginAt = new Date();
-      if (isEmail(resolvedIdentifier)) user.emailVerified = true;
-      else user.phoneVerified = true;
-      await user.save();
+      const loginUpdate = {
+        lastLoginAt: new Date(),
+        ...(isEmail(resolvedIdentifier) ? { emailVerified: true } : { phoneVerified: true }),
+      };
+      await User.updateOne({ _id: user._id }, { $set: loginUpdate });
+      user = await User.findById(user._id);
     }
 
     if (isReviewIdentifier(resolvedIdentifier)) {
@@ -393,7 +395,10 @@ async function deviceRegistrationVerifyOtp(req, res, next) {
 async function googleSignIn(req, res, next) {
   try {
     const idToken = String(req.body.idToken || '').trim();
-    const payload = await verifyGoogleIdToken(idToken, env.GOOGLE_WEB_CLIENT_ID);
+    const payload = await verifyGoogleIdToken(idToken, [
+      env.GOOGLE_WEB_CLIENT_ID,
+      env.GOOGLE_ANDROID_CLIENT_ID,
+    ]);
 
     const googleSub = String(payload.sub || '').trim();
     const email = normalizeIdentifier(payload.email || '');
