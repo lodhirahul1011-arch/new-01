@@ -196,14 +196,11 @@ export default function PersonalDetails({ navigation, route }: Props) {
         ? 'Enter a valid date as DD/MM/YYYY.'
         : undefined
     : undefined;
-  const genderError = touched.gender && gender.trim().length === 0 ? 'Please select your gender.' : undefined;
-
   const isValid = useMemo(
     () =>
       name.trim().length > 0 &&
-      isValidDob(dob.trim()) &&
-      gender.trim().length > 0,
-    [name, dob, gender],
+      isValidDob(dob.trim()),
+    [name, dob],
   );
 
   const onContinue = async () => {
@@ -235,7 +232,7 @@ export default function PersonalDetails({ navigation, route }: Props) {
         ...(dobMatch && isValidDob(dob.trim())
           ? { dateOfBirth: `${dobMatch[3]}-${dobMatch[2]}-${dobMatch[1]}` }
           : {}),
-        gender: gender.trim(),
+        ...(gender.trim() ? { gender: gender.trim() } : {}),
       }).unwrap();
       dispatch(authActions.userUpdated(response.user));
 
@@ -391,7 +388,7 @@ export default function PersonalDetails({ navigation, route }: Props) {
             </Pressable>
           </Field>
 
-          <Field label="Gender" required s={s} marginTop={s(16)} error={genderError} active={genderOpen} palette={palette}>
+          <Field label="Gender" s={s} marginTop={s(16)} active={genderOpen} palette={palette}>
             <Pressable
               style={styles.genderPressable}
               onPress={toggleGenderOpen}
