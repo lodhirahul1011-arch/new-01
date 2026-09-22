@@ -42,6 +42,7 @@ import FlashSvg from '../../../assets/icons/link-device/flash.svg';
 import GallerySvg from '../../../assets/icons/link-device/gallery.svg';
 import { SCREEN_PADDING_H } from '../../../theme/metrics';
 import { useUiScale } from '../../../theme/responsive';
+import { UI_VISIBILITY } from '../../../config/uiVisibility';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QrScanner'>;
 
@@ -318,7 +319,9 @@ export default function QrScannerScreen({ navigation, route }: Props) {
         // forcing everyone through box-linking regardless.
         navigation.reset({
           index: 0,
-          routes: [{ name: 'AskDvaariBox' }],
+          routes: [
+            { name: UI_VISIBILITY.dvaariBox ? 'AskDvaariBox' : 'MainTabs' },
+          ],
         });
         return;
       }

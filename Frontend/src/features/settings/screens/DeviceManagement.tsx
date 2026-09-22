@@ -41,6 +41,7 @@ import {
 } from '../../../services/api/uploadError';
 import { logs } from '../../../services/logs';
 import { pickSinglePhotoFromDevice } from '../../../services/media/photoPicker';
+import { UI_VISIBILITY } from '../../../config/uiVisibility';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DeviceManagement'>;
 
@@ -638,24 +639,28 @@ export default function DeviceManagement({ navigation }: Props) {
           </View>
         </View> */}
 
-        <Text style={styles.sectionTitle}>{t('connect_ecommerce_apps')}</Text>
+        {UI_VISIBILITY.ecommerceConnections ? (
+          <>
+            <Text style={styles.sectionTitle}>{t('connect_ecommerce_apps')}</Text>
 
-        <View style={styles.appsWrap}>
-          {apps.map(app => {
-            const appTitle = app.id === 'amazon' ? t('amazon') : t('flipkart');
-            const appSubtitle = app.connected ? t('connected') : t('not_connected');
-            return (
-              <EcommerceConnectCard
-                key={app.id}
-                title={appTitle}
-                subtitle={appSubtitle}
-                icon={app.icon}
-                connected={app.connected}
-                onPress={() => openConnectFlow(app.id)}
-              />
-            );
-          })}
-        </View>
+            <View style={styles.appsWrap}>
+              {apps.map(app => {
+                const appTitle = app.id === 'amazon' ? t('amazon') : t('flipkart');
+                const appSubtitle = app.connected ? t('connected') : t('not_connected');
+                return (
+                  <EcommerceConnectCard
+                    key={app.id}
+                    title={appTitle}
+                    subtitle={appSubtitle}
+                    icon={app.icon}
+                    connected={app.connected}
+                    onPress={() => openConnectFlow(app.id)}
+                  />
+                );
+              })}
+            </View>
+          </>
+        ) : null}
 
         <View style={{ height: 20 }} />
       </ScrollView>

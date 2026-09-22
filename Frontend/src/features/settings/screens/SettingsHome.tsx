@@ -325,7 +325,7 @@ export default function SettingsHome({ navigation }: Props) {
   );
 
   const rows = useMemo<Row[]>(
-    () => [
+    () => ([
       {
         id: 'edit',
         title: t('edit_profile'),
@@ -414,7 +414,7 @@ export default function SettingsHome({ navigation }: Props) {
           setLogoutVisible(true);
         },
       },
-    ].filter(row => row.id !== 'simple-mode'),
+    ] satisfies Row[]).filter(row => row.id !== 'simple-mode'),
     [handleSimpleModeChange, logoutBusy, navigation, rootNavigation, simpleMode, t],
   );
 
