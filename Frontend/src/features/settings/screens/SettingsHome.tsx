@@ -414,7 +414,7 @@ export default function SettingsHome({ navigation }: Props) {
           setLogoutVisible(true);
         },
       },
-    ],
+    ].filter(row => row.id !== 'simple-mode'),
     [handleSimpleModeChange, logoutBusy, navigation, rootNavigation, simpleMode, t],
   );
 
