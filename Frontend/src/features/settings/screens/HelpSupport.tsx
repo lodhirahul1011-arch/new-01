@@ -50,7 +50,7 @@ export default function HelpSupport({ navigation }: Props) {
       {
         id: 'whatsapp',
         title: 'WhatsApp Support',
-        subtitle: 'Chat with us: +91 80000 12345',
+        subtitle: 'Chat with us: +91 8588872228',
         Icon: WhatsAppIcon,
         type: 'whatsapp',
         highlighted: true,
@@ -58,7 +58,7 @@ export default function HelpSupport({ navigation }: Props) {
       {
         id: 'call',
         title: 'Call Support',
-        subtitle: '1800-123-DVAARI (Toll-free)',
+        subtitle: '8588872228 (Toll-free)',
         Icon: CallIcon,
         type: 'call',
       },
@@ -122,7 +122,7 @@ export default function HelpSupport({ navigation }: Props) {
   );
 
   const openWhatsapp = async () => {
-    const phone = '918000012345';
+    const phone = '918588872228';
     const message = 'Hello Dvaari support';
     const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(
       message,
@@ -146,7 +146,7 @@ export default function HelpSupport({ navigation }: Props) {
 
   const openCall = async () => {
     try {
-      await Linking.openURL('tel:1800123382274');
+      await Linking.openURL('tel:8588872228');
     } catch (error) {
       logs.error('Could not open support dialer', error);
       Alert.alert('Unable to call', 'Could not open phone dialer.');

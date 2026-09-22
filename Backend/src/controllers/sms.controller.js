@@ -80,6 +80,40 @@ async function getPrimaryUserForHome(homeId) {
   }).select('_id preferences fcmTokens');
 }
 
+async function notifyUpcomingSchedule(homeId, schedule, source) {
+  if (!schedule || schedule.notifications?.upcomingScheduledSentAt) {
+    return;
+  }
+
+  try {
+    const user = await getPrimaryUserForHome(homeId);
+    const pushResult = await sendUpcomingDeliveryScheduledNotification(user, schedule);
+    if (pushResult?.sent > 0) {
+      schedule.notifications = {
+        ...(schedule.notifications || {}),
+        upcomingScheduledSentAt: new Date(),
+      };
+      await schedule.save();
+      return;
+    }
+
+    safeLog('[SmsController] upcoming_schedule_push_skipped', {
+      source,
+      reason:
+        pushResult?.reason ||
+        pushResult?.error ||
+        (pushResult?.skipped ? 'skipped' : 'not_sent'),
+      scheduleId: String(schedule._id),
+    });
+  } catch (notificationError) {
+    safeLog('[SmsController] upcoming_schedule_push_failed', {
+      source,
+      error: notificationError.message,
+      scheduleId: String(schedule._id),
+    });
+  }
+}
+
 async function updateMatchingTabletDeliverySession(homeId, schedule, update) {
   // We intentionally avoid requiring a sessionId from the mobile app.
   // We match the most recent resident_notified session for this home + schedule identifiers.
@@ -1012,6 +1046,7 @@ class SmsController {
           homeId: String(homeId),
           scheduleId: String(idempotentSchedule._id),
         });
+        await notifyUpcomingSchedule(homeId, idempotentSchedule, 'manual_idempotency_replay');
         return res.status(idempotentSchedule.manualIdempotencyStatusCode || 200).json({
           success: true,
           data: idempotentSchedule,
@@ -1127,6 +1162,10 @@ class SmsController {
         scheduleId: String(schedule._id),
         created: isNewSchedule,
       });
+
+      if (isNewSchedule) {
+        await notifyUpcomingSchedule(homeId, schedule, 'manual_schedule_created');
+      }
 
       return res.status(isNewSchedule ? 201 : 200).json({
         success: true,

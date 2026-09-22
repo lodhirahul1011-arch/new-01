@@ -513,10 +513,10 @@ export default function MembersList({ navigation }: Props) {
             delivery, manage settings
           </Text>
 
-          <Text style={[styles.accessLine, styles.accessLineGap]}>
+          {/* <Text style={[styles.accessLine, styles.accessLineGap]}>
             <Text style={styles.bold}>Simple Mode:</Text> NFC card only, no app
             required
-          </Text>
+          </Text> */}
         </View>
       </View>
 
