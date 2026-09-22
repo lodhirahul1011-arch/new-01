@@ -43,6 +43,7 @@ import {
   subscribeToNotificationInbox,
 } from '../../../services/notifications/notificationInbox';
 import { logs } from '../../../services/logs';
+import { UI_VISIBILITY } from '../../../config/uiVisibility';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -1493,7 +1494,9 @@ export default function Home({ navigation }: Props) {
       iconSize: 22,
       onPress: goRecordings,
     },
-  ];
+  ].filter(
+    action => UI_VISIBILITY.deliveryImages || action.id !== 'recordings',
+  );
 
   const simpleModeCopy = useMemo(
     () => ({
@@ -1544,24 +1547,28 @@ export default function Home({ navigation }: Props) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionTitle}>Live Feed</Text>
+        {UI_VISIBILITY.liveFeed ? (
+          <>
+            <Text style={styles.sectionTitle}>Live Feed</Text>
 
-        <Pressable style={styles.liveCard} onPress={goLiveFeed}>
-          <View style={styles.liveIconWrap}>
-            <HOME_ASSETS.liveFeed width="100%" height="100%" />
-          </View>
-          <Text
-            adjustsFontSizeToFit
-            minimumFontScale={0.84}
-            style={styles.liveText}
-          >
-            Live Feed
-          </Text>
-          <HOME_ASSETS.chevronRight
-            width={styles.liveChevron.width}
-            height={styles.liveChevron.height}
-          />
-        </Pressable>
+            <Pressable style={styles.liveCard} onPress={goLiveFeed}>
+              <View style={styles.liveIconWrap}>
+                <HOME_ASSETS.liveFeed width="100%" height="100%" />
+              </View>
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.84}
+                style={styles.liveText}
+              >
+                Live Feed
+              </Text>
+              <HOME_ASSETS.chevronRight
+                width={styles.liveChevron.width}
+                height={styles.liveChevron.height}
+              />
+            </Pressable>
+          </>
+        ) : null}
 
         <Pressable
           style={[

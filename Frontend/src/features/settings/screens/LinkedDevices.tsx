@@ -27,6 +27,7 @@ import DvaariDeviceSvg from '../../../assets/icons/settings/link-device/dwari-de
 import ThisDeviceSvg from '../../../assets/icons/settings/link-device/this-device.svg';
 import PlusSignSvg from '../../../assets/icons/members/plus-sign.svg';
 import ThreeDotSvg from '../../../assets/icons/settings/link-device/three-dot.svg';
+import { UI_VISIBILITY } from '../../../config/uiVisibility';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LinkedDevices'>;
 
@@ -257,32 +258,36 @@ export default function LinkedDevices({ navigation }: Props) {
           <Text style={styles.primaryText}>{t('link_device')}</Text>
         </Pressable>
 
-        <View style={styles.rowBetween}>
-          <Text style={styles.sectionTitle}>{t('dvaari_boxes')}</Text>
-          <Text style={styles.sectionCount}>{boxes.length} box</Text>
-        </View>
+        {UI_VISIBILITY.dvaariBox ? (
+          <>
+            <View style={styles.rowBetween}>
+              <Text style={styles.sectionTitle}>{t('dvaari_boxes')}</Text>
+              <Text style={styles.sectionCount}>{boxes.length} box</Text>
+            </View>
 
-        {boxes.length === 0 ? (
-          <View style={styles.stateCard}>
-            <Text style={styles.stateTitle}>{t('no_dvaari_box')}</Text>
-            <Text style={styles.stateText}>{t('link_door_device')}</Text>
-          </View>
-        ) : (
-          boxes.map(device => renderLinkedCard(device, 'box'))
-        )}
+            {boxes.length === 0 ? (
+              <View style={styles.stateCard}>
+                <Text style={styles.stateTitle}>{t('no_dvaari_box')}</Text>
+                <Text style={styles.stateText}>{t('link_door_device')}</Text>
+              </View>
+            ) : (
+              boxes.map(device => renderLinkedCard(device, 'box'))
+            )}
 
-        <Pressable
-          style={styles.successBtn}
-          onPress={() =>
-            navigation.navigate('DeviceSetup', {
-              type: 'box',
-              from: 'settings',
-            })
-          }
-        >
-          <PlusSignSvg width={18} height={18} />
-          <Text style={styles.successText}>{t('link_dvaari_box')}</Text>
-        </Pressable>
+            <Pressable
+              style={styles.successBtn}
+              onPress={() =>
+                navigation.navigate('DeviceSetup', {
+                  type: 'box',
+                  from: 'settings',
+                })
+              }
+            >
+              <PlusSignSvg width={18} height={18} />
+              <Text style={styles.successText}>{t('link_dvaari_box')}</Text>
+            </Pressable>
+          </>
+        ) : null}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
