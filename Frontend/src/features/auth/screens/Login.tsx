@@ -1006,6 +1006,7 @@ function createStyles(scale: number) {
       left: 0,
       right: 0,
       bottom: 0,
+      zIndex: 0,
       overflow: 'hidden',
     },
 
@@ -1051,6 +1052,8 @@ function createStyles(scale: number) {
       position: 'absolute',
       left: 0,
       right: 0,
+      zIndex: 2,
+      elevation: 2,
       backgroundColor: '#FFFFFF',
     },
 
@@ -1157,6 +1160,8 @@ function createStyles(scale: number) {
       left: 0,
       right: 0,
       bottom: 0,
+      zIndex: 4,
+      elevation: 4,
       backgroundColor: 'rgba(0,0,0,0.5)',
       justifyContent: 'center',
       alignItems: 'center',

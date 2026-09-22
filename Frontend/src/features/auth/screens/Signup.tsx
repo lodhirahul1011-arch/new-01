@@ -27,7 +27,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
 
 const EMAIL_REGEX =
   /^(?!.*\.\.)[A-Za-z0-9._%+-]+(?<!\.)@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
-const PHONE_REGEX = /^\+91[6-9]\d{9}$/;
+const PHONE_REGEX = /^\+91\s?[6-9]\d{9}$/;
 const NAME_REGEX = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
 
 type SignupErrors = {
@@ -58,7 +58,7 @@ function validateEmail(value: string) {
 }
 
 function validatePhone(value: string) {
-  if (/[^+\d]/.test(value)) return 'Mobile number can contain only digits.';
+  if (/[^+\d\s]/.test(value)) return 'Mobile number can contain only digits.';
 
   const digits = value.replace(/\D/g, '');
   const withoutCountry = digits.startsWith('91') ? digits.slice(2) : digits;
@@ -96,7 +96,7 @@ export default function Signup({ navigation, route }: Props) {
 
   const [name, setName] = useState(route.params?.prefillName ?? '');
   const [email, setEmail] = useState(route.params?.prefillEmail ?? '');
-  const [phone, setPhone] = useState(route.params?.prefillPhone ?? '+91');
+  const [phone, setPhone] = useState(route.params?.prefillPhone ?? '+91 ');
   const [error, setError] = useState<string | undefined>(undefined);
   const [phoneInputError, setPhoneInputError] = useState('');
   const [nameInputError, setNameInputError] = useState('');
@@ -364,7 +364,7 @@ export default function Signup({ navigation, route }: Props) {
                 onFocus={() => {
                   setPhoneTouched(true);
                   if (phone === '+91') {
-                    setPhone('+91');
+                    setPhone('+91 ');
                   }
                 }}
                 onBlur={() => setPhoneTouched(true)}

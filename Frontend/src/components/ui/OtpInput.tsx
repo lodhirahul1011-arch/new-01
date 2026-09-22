@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, TextInput, StyleSheet, Text, Platform } from 'react-native';
+import { View, TextInput, StyleSheet, Text, Platform, Pressable } from 'react-native';
 import { useUiScale } from '../../theme/responsive';
 
 type Props = {
@@ -33,8 +33,9 @@ export default function OtpInput({
 }: Props) {
   const styles = useStyles();
   const s = (n: number) => n * scale;
-  const inputsRef = useRef<Array<TextInput | null>>([]);
+  const inputRef = useRef<TextInput | null>(null);
   const [internal, setInternal] = useState<string>('');
+  const [focused, setFocused] = useState(false);
 
   const code = value ?? internal;
 
@@ -52,91 +53,67 @@ export default function OtpInput({
   useEffect(() => {
     if (!autoFocus) return;
     const t = setTimeout(() => {
-      inputsRef.current[0]?.focus();
+      inputRef.current?.focus();
     }, 250);
     return () => clearTimeout(t);
   }, [autoFocus]);
 
-  const focusIndex = (i: number) => {
-    const idx = Math.max(0, Math.min(length - 1, i));
-    inputsRef.current[idx]?.focus();
-  };
-
-  const handleChangeAt = (i: number, text: string) => {
-    // paste / fast input support
-    const clean = text.replace(/\D/g, '');
-    if (clean.length > 1) {
-      const merged = (code.slice(0, i) + clean + code.slice(i + clean.length)).slice(0, length);
-      setCode(merged);
-      const nextIndex = Math.min(length - 1, i + clean.length);
-      focusIndex(nextIndex);
-      return;
-    }
-
-    const nextChar = clean ? clean[0] : '';
-    const next = code.split('');
-    next[i] = nextChar;
-    const merged = next.join('').slice(0, length);
-    setCode(merged);
-
-    if (nextChar && i < length - 1) focusIndex(i + 1);
-  };
-
-  const handleKeyPressAt = (i: number, key: string) => {
-    if (key !== 'Backspace') return;
-
-    if (digits[i]) {
-      // clear current
-      const next = code.split('');
-      next[i] = '';
-      setCode(next.join(''));
-      return;
-    }
-    // move back and clear previous
-    if (i > 0) {
-      const next = code.split('');
-      next[i - 1] = '';
-      setCode(next.join(''));
-      focusIndex(i - 1);
-    }
-  };
-
   return (
     <View style={styles.wrap}>
-      <View style={[styles.row, { gap: s(16) }]}>
-        {digits.map((d, i) => (
-          <TextInput
-            key={i}
-            ref={(r) => {
-              inputsRef.current[i] = r;
-            }}
-            value={d}
-            onChangeText={(t) => handleChangeAt(i, t)}
-            onKeyPress={({ nativeEvent }) => handleKeyPressAt(i, nativeEvent.key)}
-            style={[
-              styles.box,
-              {
-                width: s(52),
-                height: s(52),
-                borderRadius: s(5),
-                fontSize: s(32),
-              },
-              dark && styles.boxDark,
-              !!errorText && styles.boxError,
-            ]}
-            keyboardType={Platform.select({ ios: 'number-pad', android: 'numeric' })}
-            returnKeyType="done"
-            textAlign="center"
-            maxLength={i === 0 ? length : 1}
-            importantForAutofill={i === 0 ? 'yes' : 'no'}
-            autoComplete={i === 0 ? 'sms-otp' : 'off'}
-            textContentType={i === 0 ? 'oneTimeCode' : 'none'}
-            selectionColor={activeColor}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-        ))}
-      </View>
+      <Pressable
+        accessibilityRole="none"
+        onPress={() => inputRef.current?.focus()}
+        style={[styles.row, { gap: s(16) }]}
+      >
+        {digits.map((d, i) => {
+          const isActive = focused && i === Math.min(code.length, length - 1);
+          return (
+            <View
+              key={i}
+              style={[
+                styles.box,
+                {
+                  width: s(52),
+                  height: s(52),
+                  borderRadius: s(5),
+                },
+                dark && styles.boxDark,
+                isActive && { borderColor: activeColor },
+                !!errorText && styles.boxError,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.digit,
+                  dark && styles.digitDark,
+                  { fontSize: s(32) },
+                ]}
+              >
+                {d}
+              </Text>
+            </View>
+          );
+        })}
+        <TextInput
+          ref={inputRef}
+          value={code}
+          onChangeText={setCode}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={styles.autofillInput}
+          keyboardType={Platform.select({ ios: 'number-pad', android: 'numeric' })}
+          returnKeyType="done"
+          maxLength={length}
+          importantForAutofill="yes"
+          autoComplete="sms-otp"
+          textContentType="oneTimeCode"
+          selectionColor="transparent"
+          autoCorrect={false}
+          autoCapitalize="none"
+          caretHidden
+          accessibilityLabel={`${length} digit verification code`}
+        />
+      </Pressable>
 
       {!!errorText && (
         <Text style={[styles.error, dark && styles.errorDark, { fontSize: s(12) }]}>
@@ -157,7 +134,7 @@ function createStyles(scale: number) {
 
   return StyleSheet.create({
     wrap: { width: '100%', alignItems: 'center' },
-    row: { flexDirection: 'row', justifyContent: 'center' },
+    row: { flexDirection: 'row', justifyContent: 'center', position: 'relative' },
 
     box: {
       borderWidth: 0.45,
@@ -166,13 +143,25 @@ function createStyles(scale: number) {
       fontFamily: 'Satoshi-Regular',
       textAlignVertical: 'center',
       includeFontPadding: false,
-      padding: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    digit: {
+      fontFamily: 'Satoshi-Regular',
       color: 'rgba(34,34,34,0.79)',
     },
     boxDark: {
       borderColor: 'rgba(255,255,255,0.25)',
       backgroundColor: 'rgba(255,255,255,0.08)',
+    },
+    digitDark: {
       color: 'rgba(255,255,255,0.9)',
+    },
+    autofillInput: {
+      ...StyleSheet.absoluteFillObject,
+      opacity: 0.01,
+      color: 'transparent',
+      padding: 0,
     },
     boxError: {
       borderColor: '#F05D5D',
