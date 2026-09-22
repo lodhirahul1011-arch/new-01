@@ -22,6 +22,7 @@ import {
   type AnalyticsMonthlyReport,
 } from '../../../services/api/analyticsApi';
 import { API_BASE_URL } from '../../../config/env';
+import { UI_VISIBILITY } from '../../../config/uiVisibility';
 import { getAccessToken } from '../../../services/storage/tokenStorage';
 import FilterSvg from '../../../assets/icons/analitics-tab/filter.svg';
 import PdfSvg from '../../../assets/icons/analitics-tab/pdf-01.svg';
@@ -148,6 +149,10 @@ const FALLBACK_INSIGHTS: InsightItem[] = [
   { id: 'receipts', label: 'Business receipts generated', count: 10 },
 ];
 
+const isSecurityInsightVisible = (id: string) =>
+  (UI_VISIBILITY.securityInsightImagesSaved || id !== 'recording') &&
+  (UI_VISIBILITY.securityInsightCodPayments || id !== 'otp');
+
 export default function AnalyticsStack() {
   const { t } = useAppTranslation();
   const [activeMonth, setActiveMonth] = useState<string>(
@@ -262,7 +267,9 @@ export default function AnalyticsStack() {
 
   const securityInsights = useMemo(() => {
     if (!report?.securityInsights) {
-      return FALLBACK_INSIGHTS.map(item => ({
+      return FALLBACK_INSIGHTS.filter(item =>
+        isSecurityInsightVisible(item.id),
+      ).map(item => ({
         ...item,
         label: t(item.label),
       }));
@@ -289,7 +296,7 @@ export default function AnalyticsStack() {
         label: t('business_receipts_generated'),
         count: report.securityInsights.businessReceiptsGenerated,
       },
-    ];
+    ].filter(item => isSecurityInsightVisible(item.id));
   }, [report, t]);
 
   const subtitle = report
