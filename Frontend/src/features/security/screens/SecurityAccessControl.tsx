@@ -32,6 +32,7 @@ import {
   useUpdateNfcCardMutation,
 } from '../../../services/api/nfcApi';
 import { useUsersMeQuery } from '../../../services/api/authApi';
+import { UI_VISIBILITY } from '../../../config/uiVisibility';
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
@@ -130,7 +131,7 @@ export default function SecurityAccessControl({ navigation }: Props) {
   );
 
   const accessLevelCards = useMemo<AccessLevelCard[]>(
-    () => [
+    () => ([
       {
         id: 'admin',
         title: 'Admin',
@@ -160,7 +161,9 @@ export default function SecurityAccessControl({ navigation }: Props) {
         assignedUsers: [],
         bulletColor: '#16A34A',
       },
-    ],
+    ] satisfies AccessLevelCard[]).filter(
+      card => UI_VISIBILITY.securitySimpleMode || card.id !== 'simple',
+    ),
     [primaryUserName],
   );
 
