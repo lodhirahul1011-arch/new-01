@@ -4,6 +4,4 @@ export const UI_VISIBILITY = {
   dvaariBox: false,
   ecommerceConnections: false,
   deliveryImages: false,
-  securityInsightImagesSaved: false,
-  securityInsightCodPayments: false,
 } as const;
