@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log*
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+logs
+uploads
+private_uploads
+coverage
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+firebase-service-account*.json
