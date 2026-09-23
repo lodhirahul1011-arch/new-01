@@ -6,5 +6,4 @@ export const UI_VISIBILITY = {
   deliveryImages: false,
   securityInsightImagesSaved: false,
   securityInsightCodPayments: false,
-  securitySimpleMode: false,
 } as const;
