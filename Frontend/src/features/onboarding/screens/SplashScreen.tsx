@@ -360,7 +360,10 @@ function createStyles(scale: number) {
     },
 
     errorWrap: {
-      marginTop: s(Spacing.xxxl - Spacing.xs),
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: s(48),
       paddingHorizontal: s(Spacing.xxl),
       alignItems: 'center',
     },
