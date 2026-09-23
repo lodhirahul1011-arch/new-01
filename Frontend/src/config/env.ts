@@ -5,7 +5,7 @@ import { logs } from '../services/logs';
 const LOCAL_API_BASE_URL = 'http://localhost:5000';
 const PRODUCTION_API_BASE_URL = 'https://api.grahnetra.com';
 // Set true only for intentional local-device testing with adb reverse.
-const USE_LOCAL_BACKEND = false;
+const USE_LOCAL_BACKEND = true;
 const isDebugBuild = typeof __DEV__ !== 'undefined' && __DEV__;
 const useLocalBackend = isDebugBuild && USE_LOCAL_BACKEND;
 
@@ -36,9 +36,8 @@ export const API_BASE_URL = normalizeApiBaseUrl(
 export const API_BASE_URL_FALLBACKS = [API_BASE_URL];
 
 // Dev-only escape hatch for the "you must link a device before using the app"
-// gate, so screens behind it can be worked on without a pairable device on
-// hand. Flip SKIP_DEVICE_LINKING_IN_DEV back to false once linking works.
-const SKIP_DEVICE_LINKING_IN_DEV = true;
+// gate. Keep this disabled so Home is only reachable after device linking.
+const SKIP_DEVICE_LINKING_IN_DEV = false;
 export const DEV_SKIP_DEVICE_LINKING =
   isDebugBuild && SKIP_DEVICE_LINKING_IN_DEV;
 
@@ -63,9 +62,9 @@ if (DEV_PREVIEW_ADD_MEMBER_FLOW) {
 // screens can be demoed without pairable hardware.
 const DEMO_ONBOARDING_WALKTHROUGH_IN_DEV = false; // TEMP: disabled for Google-flow testing
 
-// TEMPORARY: skips the onboarding carousel in dev so the Google confirm-sheet
-// flow can be tested without tapping through 4 slides (revert after testing).
-const TEMP_SKIP_ONBOARDING_IN_DEV = true;
+// Keep the onboarding carousel enabled for all builds so the intended 4-screen
+// introduction is shown to new users. This temporary bypass is intentionally off.
+const TEMP_SKIP_ONBOARDING_IN_DEV = false;
 export const TEMP_SKIP_ONBOARDING = isDebugBuild && TEMP_SKIP_ONBOARDING_IN_DEV;
 export const DEMO_ONBOARDING_WALKTHROUGH =
   isDebugBuild && DEMO_ONBOARDING_WALKTHROUGH_IN_DEV;

@@ -446,7 +446,7 @@ export default function Login({ navigation, route }: Props) {
       } else {
         navigation.reset({
           index: 0,
-          routes: [{ name: 'PersonalDetails', params: { next: 'DeviceSetup', prefillName: googleName, prefillPhoto: googlePhoto } }],
+          routes: [{ name: 'PersonalDetails', params: { next: 'AccountVerified', prefillName: googleName, prefillPhoto: googlePhoto } }],
         });
       }
     } catch (err: any) {

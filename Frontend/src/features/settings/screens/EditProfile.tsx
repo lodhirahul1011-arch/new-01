@@ -292,6 +292,7 @@ export default function EditProfile({ navigation }: Props) {
       setError(undefined);
 
       setSelectedPhoto(asset);
+      setProfileImage(asset.uri);
       logs.info('Profile photo staged for upload', {
         fileName: asset.fileName,
         type: asset.type,
@@ -380,6 +381,13 @@ export default function EditProfile({ navigation }: Props) {
         }).unwrap();
 
         nextUser = photoResponse?.user ?? nextUser;
+        const uploadedProfileImage = getUserProfileImage(nextUser);
+        if (uploadedProfileImage) {
+          setProfileImage(uploadedProfileImage);
+          if (authUser?._id) {
+            await setCachedProfileImage(authUser._id, uploadedProfileImage);
+          }
+        }
       }
 
       const resolvedProfileImage =

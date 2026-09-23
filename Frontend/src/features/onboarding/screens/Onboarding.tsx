@@ -211,7 +211,10 @@ export default function Onboarding({ navigation }: Props) {
   };
 
   return (
-    <ResponsiveScrollScreen backgroundColor={palette.background}>
+    <ResponsiveScrollScreen
+      backgroundColor={palette.background}
+      scrollEnabled={false}
+    >
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
       <View style={[styles.container, { paddingTop: s(HEADER_TOP), paddingBottom: s(24) }]}>
         {/* Ambient blue glow behind the status bar — present on every dark-mode

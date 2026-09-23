@@ -129,12 +129,6 @@ export default function SplashScreen({ navigation }: Props) {
         dispatch(preferencesActions.simpleModeHydrated(storedSimpleMode));
 
         if (!onboardingCompleted && !tokens.accessToken) {
-          // TEMP dev bypass: jump straight to Login so the Google confirm-sheet
-          // flow can be tested without tapping through the carousel.
-          if (TEMP_SKIP_ONBOARDING) {
-            navigation.replace('Login');
-            return;
-          }
           navigation.replace('Onboarding');
           return;
         }

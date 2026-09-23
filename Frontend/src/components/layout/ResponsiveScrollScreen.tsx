@@ -16,6 +16,7 @@ type Props = {
   contentContainerStyle?: StyleProp<ViewStyle>;
   keyboardAware?: boolean;
   showsVerticalScrollIndicator?: boolean;
+  scrollEnabled?: boolean;
 };
 
 export default function ResponsiveScrollScreen({
@@ -24,6 +25,7 @@ export default function ResponsiveScrollScreen({
   contentContainerStyle,
   keyboardAware = false,
   showsVerticalScrollIndicator = false,
+  scrollEnabled = true,
 }: Props) {
   const { height } = useWindowDimensions();
 
@@ -34,6 +36,7 @@ export default function ResponsiveScrollScreen({
         { minHeight: height },
         contentContainerStyle,
       ]}
+      scrollEnabled={scrollEnabled}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
     >
