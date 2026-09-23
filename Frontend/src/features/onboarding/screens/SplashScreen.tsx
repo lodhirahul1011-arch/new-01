@@ -307,7 +307,7 @@ export default function SplashScreen({ navigation }: Props) {
 
   return (
 
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView edges={[]} style={styles.safe}>
 
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
