@@ -80,6 +80,12 @@ function validateProductionEnv(nextEnv) {
   if (!nextEnv.TABLET_BOOTSTRAP_SECRET || nextEnv.TABLET_BOOTSTRAP_SECRET.length < 32) {
     errors.push('TABLET_BOOTSTRAP_SECRET must be set to at least 32 characters in production');
   }
+  if (
+    nextEnv.PLAY_STORE_REVIEW_ACCESS_ENABLED &&
+    (!nextEnv.PLAY_STORE_REVIEW_EMAIL || !nextEnv.PLAY_STORE_REVIEW_PHONE || !nextEnv.PLAY_STORE_REVIEW_OTP)
+  ) {
+    errors.push('Play Store review credentials are required when PLAY_STORE_REVIEW_ACCESS_ENABLED=true');
+  }
   if (nextEnv.OLLAMA_ENABLED && !nextEnv.OLLAMA_BASE_URL) {
     errors.push('OLLAMA_BASE_URL is required when OLLAMA_ENABLED=true');
   }
@@ -120,10 +126,10 @@ const env = {
   OTP_DEBUG_LOG_ENABLED: boolEnv('OTP_DEBUG_LOG_ENABLED'),
   OTP_CONSOLE_FALLBACK: boolEnv('OTP_CONSOLE_FALLBACK', process.env.ALLOW_OTP_CONSOLE_FALLBACK),
   OTP_EXPOSE_CODE_IN_RESPONSE: boolEnv('OTP_EXPOSE_CODE_IN_RESPONSE'),
-  PLAY_STORE_REVIEW_ACCESS_ENABLED: true,
-  PLAY_STORE_REVIEW_EMAIL: 'demo@test.com',
-  PLAY_STORE_REVIEW_PHONE: '+919999999999',
-  PLAY_STORE_REVIEW_OTP: '1234',
+  PLAY_STORE_REVIEW_ACCESS_ENABLED: boolEnv('PLAY_STORE_REVIEW_ACCESS_ENABLED'),
+  PLAY_STORE_REVIEW_EMAIL: String(process.env.PLAY_STORE_REVIEW_EMAIL || '').trim(),
+  PLAY_STORE_REVIEW_PHONE: String(process.env.PLAY_STORE_REVIEW_PHONE || '').trim(),
+  PLAY_STORE_REVIEW_OTP: String(process.env.PLAY_STORE_REVIEW_OTP || '').trim(),
   PLAY_STORE_REVIEW_QR_TOKEN: process.env.PLAY_STORE_REVIEW_QR_TOKEN || 'DVAARI_PLAY_STORE_REVIEW_QR',
   PLAY_STORE_REVIEW_DEVICE_ID: 'dvaari-play-store-review-box',
 
